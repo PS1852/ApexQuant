@@ -18,7 +18,7 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !password) {
       toast.error('Please enter both email and password');
       return;
@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
       const { data, error } = await signIn(email, password);
-      
+
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
           toast.error('Invalid email or password');
@@ -52,7 +52,7 @@ export default function LoginPage() {
     try {
       setGoogleLoading(true);
       const { error } = await signInWithGoogle();
-      
+
       if (error) {
         toast.error(error.message);
       }
@@ -69,7 +69,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <img src="/logo.svg" alt="ApexQuant" className="h-12 w-12" />
+            <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-12 w-12" />
             <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
               ApexQuant
             </span>
@@ -83,7 +83,7 @@ export default function LoginPage() {
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             {/* Google Login */}
             <Button

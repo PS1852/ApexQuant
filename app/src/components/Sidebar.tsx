@@ -56,7 +56,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-slate-800">
         <Link to="/dashboard" className="flex items-center gap-3">
-          <img src="/logo.svg" alt="ApexQuant" className="h-10 w-10" />
+          <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-10 w-10" />
           <div>
             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
               ApexQuant
@@ -71,7 +71,7 @@ export default function Sidebar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.path);
-          
+
           return (
             <Link
               key={item.path}
@@ -79,8 +79,8 @@ export default function Sidebar() {
               onClick={() => setIsMobileOpen(false)}
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group
-                ${active 
-                  ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 border border-blue-500/30' 
+                ${active
+                  ? 'bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-blue-400 border border-blue-500/30'
                   : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
                 }
               `}
@@ -103,7 +103,7 @@ export default function Sidebar() {
             </p>
           </div>
         )}
-        
+
         <Button
           variant="ghost"
           className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl justify-start"
@@ -127,12 +127,12 @@ export default function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 border-b border-slate-800">
         <div className="flex items-center justify-between p-4">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.svg" alt="ApexQuant" className="h-8 w-8" />
+            <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-8 w-8" />
             <span className="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
               ApexQuant
             </span>
           </Link>
-          
+
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="text-slate-400">

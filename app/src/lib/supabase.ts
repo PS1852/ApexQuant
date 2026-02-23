@@ -76,7 +76,7 @@ export const getProfile = async (userId: string) => {
 export const updateProfile = async (userId: string, updates: Partial<{ full_name: string; avatar_url: string }>) => {
   const { data, error } = await supabase
     .from('profiles')
-    .update(updates)
+    .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', userId)
     .select()
     .single();

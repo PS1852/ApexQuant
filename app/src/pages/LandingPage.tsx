@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  TrendingUp, 
-  Shield, 
-  Zap, 
-  BarChart3, 
-  Globe, 
+import {
+  TrendingUp,
+  Shield,
+  Zap,
+  BarChart3,
+  Globe,
   Smartphone,
   ArrowRight,
   CheckCircle2,
@@ -77,18 +77,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="flex items-center gap-2">
-              <img src="/logo.svg" alt="ApexQuant" className="h-8 w-8" />
+              <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-8 w-8" />
               <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
                 ApexQuant
               </span>
             </Link>
-            
+
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-slate-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a>
               <a href="#pricing" className="text-slate-400 hover:text-white transition-colors">Pricing</a>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <Link to="/login">
                 <Button variant="ghost" className="text-slate-300 hover:text-white">
@@ -129,19 +129,19 @@ export default function LandingPage() {
                 <Star className="h-4 w-4 text-blue-400" />
                 <span className="text-blue-400 text-sm font-medium">Free Virtual Trading Platform</span>
               </div>
-              
+
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
                 Master Trading with{' '}
                 <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   Zero Risk
                 </span>
               </h1>
-              
+
               <p className="text-lg text-slate-400 max-w-xl">
-                Start your trading journey with ₹2,000 virtual money. Practice trading in real market conditions 
+                Start your trading journey with ₹2,000 virtual money. Practice trading in real market conditions
                 with live data from NSE, BSE, and US markets.
               </p>
-              
+
               <div className="flex flex-wrap gap-4">
                 <Link to="/signup">
                   <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 gap-2">
@@ -154,7 +154,7 @@ export default function LandingPage() {
                   Watch Demo
                 </Button>
               </div>
-              
+
               <div className="flex items-center gap-6 text-sm text-slate-500">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -166,13 +166,13 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            
+
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl" />
               <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-800 p-6 shadow-2xl">
-                <img 
-                  src="/logo.svg" 
-                  alt="Trading Dashboard" 
+                <img
+                  src={`${import.meta.env.BASE_URL}logo.svg`}
+                  alt="Trading Dashboard"
                   className="w-full h-auto rounded-xl"
                 />
                 <div className="mt-6 grid grid-cols-3 gap-4">
@@ -225,17 +225,17 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Our platform provides all the tools and features you need to practice trading 
+              Our platform provides all the tools and features you need to practice trading
               and improve your skills without risking real money.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => {
               const Icon = feature.icon;
               return (
-                <div 
-                  key={index} 
+                <div
+                  key={index}
                   className="group p-6 rounded-2xl bg-slate-900/50 border border-slate-800 hover:border-blue-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10"
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -261,7 +261,7 @@ export default function LandingPage() {
               </span>
             </h2>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
@@ -304,7 +304,7 @@ export default function LandingPage() {
               </span>
             </h2>
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
@@ -389,7 +389,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <Link to="/" className="flex items-center gap-2 mb-4">
-                <img src="/logo.svg" alt="ApexQuant" className="h-8 w-8" />
+                <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-8 w-8" />
                 <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                   ApexQuant
                 </span>
@@ -398,7 +398,7 @@ export default function LandingPage() {
                 The ultimate virtual trading platform for learning and practicing stock trading.
               </p>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-400">
@@ -407,7 +407,7 @@ export default function LandingPage() {
                 <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-slate-400">
@@ -416,7 +416,7 @@ export default function LandingPage() {
                 <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
-            
+
             <div>
               <h4 className="text-white font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm text-slate-400">
@@ -426,7 +426,7 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
             <p>© 2024 ApexQuant. All rights reserved. Virtual trading platform for educational purposes only.</p>
           </div>
