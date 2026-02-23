@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="90" fill="url(#logoGradient)" opacity="0.1"/>
+  
+  <!-- Outer Ring -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="url(#logoGradient)" stroke-width="3"/>
+  
+  <!-- Chart Line -->
+  <path d="M 40 120 L 60 100 L 80 110 L 100 70 L 120 80 L 140 50 L 160 60" 
+        fill="none" 
+        stroke="url(#logoGradient)" 
+        stroke-width="5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Chart Area Fill -->
+  <path d="M 40 120 L 60 100 L 80 110 L 100 70 L 120 80 L 140 50 L 160 60 L 160 150 L 40 150 Z" 
+        fill="url(#chartGradient)"/>
+  
+  <!-- Data Points -->
+  <circle cx="60" cy="100" r="5" fill="#3b82f6"/>
+  <circle cx="80" cy="110" r="5" fill="#6366f1"/>
+  <circle cx="100" cy="70" r="5" fill="#8b5cf6"/>
+  <circle cx="120" cy="80" r="5" fill="#a855f7"/>
+  <circle cx="140" cy="50" r="6" fill="#10b981"/>
+  <circle cx="160" cy="60" r="5" fill="#06b6d4"/>
+  
+  <!-- Center A Letter -->
+  <text x="100" y="175" 
+        font-family="system-ui, -apple-system, sans-serif" 
+        font-size="18" 
+        font-weight="700" 
+        text-anchor="middle" 
+        fill="url(#logoGradient)">APEX</text>
+</svg>

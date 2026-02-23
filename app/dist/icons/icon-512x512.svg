@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="icon512Gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="icon512ChartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect x="24" y="24" width="464" height="464" rx="80" fill="#0f172a"/>
+  
+  <!-- Chart Line -->
+  <path d="M 96 320 L 160 256 L 224 288 L 288 160 L 352 208 L 416 112" 
+        fill="none" 
+        stroke="url(#icon512Gradient)" 
+        stroke-width="20" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Chart Area -->
+  <path d="M 96 320 L 160 256 L 224 288 L 288 160 L 352 208 L 416 112 L 416 416 L 96 416 Z" 
+        fill="url(#icon512ChartGradient)"/>
+  
+  <!-- Data Points -->
+  <circle cx="160" cy="256" r="20" fill="#3b82f6"/>
+  <circle cx="224" cy="288" r="20" fill="#6366f1"/>
+  <circle cx="288" cy="160" r="20" fill="#8b5cf6"/>
+  <circle cx="352" cy="208" r="20" fill="#a855f7"/>
+  <circle cx="416" cy="112" r="24" fill="#10b981"/>
+</svg>
