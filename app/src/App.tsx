@@ -21,14 +21,14 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename={import.meta.env.BASE_URL}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          
+
           {/* Protected Routes */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
@@ -65,7 +65,7 @@ function App() {
               <StockDetail />
             </ProtectedRoute>
           } />
-          
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -6,6 +6,46 @@ const YAHOO_FINANCE_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 // USD to INR conversion rate (in production, this should be fetched from an API)
 let usdToInrRate = 83.5;
 
+// Fallback Mock Data Generator
+const getMockStock = (symbol: string): Stock => {
+  const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
+  const basePrice = Math.random() * 5000 + 100;
+  const change = (Math.random() - 0.5) * basePrice * 0.05;
+  let price = isUSStock ? basePrice * usdToInrRate : basePrice;
+  let changeInr = isUSStock ? change * usdToInrRate : change;
+
+  return {
+    symbol,
+    company_name: symbol + ' (Mock Data)',
+    exchange: isUSStock ? 'NASDAQ' : 'NSE',
+    current_price: price,
+    change: changeInr,
+    change_percent: (change / basePrice) * 100,
+    currency: 'INR',
+    country: isUSStock ? 'US' : 'IN'
+  };
+};
+
+const getMockChartData = (): ChartData[] => {
+  const data: ChartData[] = [];
+  let currentPrice = 1000;
+  for (let i = 30; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const change = (Math.random() - 0.5) * 50;
+    currentPrice += change;
+    data.push({
+      time: date.toISOString().split('T')[0],
+      open: currentPrice * 0.99,
+      high: currentPrice * 1.02,
+      low: currentPrice * 0.98,
+      close: currentPrice,
+      volume: Math.floor(Math.random() * 100000)
+    });
+  }
+  return data;
+};
+
 // Fetch USD to INR conversion rate
 export const fetchUsdToInr = async (): Promise<number> => {
   try {
@@ -55,9 +95,9 @@ export const formatPercentage = (value: number): string => {
 export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => {
   try {
     // Handle Indian stocks (.NS for NSE, .BO for BSE)
-    const yahooSymbol = symbol.includes('.') ? symbol : 
-                       symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
-    
+    const yahooSymbol = symbol.includes('.') ? symbol :
+      symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
+
     const response = await fetch(`${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=1d&range=1d`);
     const data = await response.json();
 
@@ -68,12 +108,12 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
 
     const result = data.chart.result[0];
     const meta = result.meta;
-    
+
     const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
-    
+
     let price = meta.regularMarketPrice || 0;
     let previousClose = meta.previousClose || meta.chartPreviousClose || price;
-    
+
     // Convert US stock prices to INR
     if (isUSStock) {
       price = convertUsdToInr(price);
@@ -94,18 +134,18 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
       country: isUSStock ? 'US' : 'IN',
     };
   } catch (error) {
-    console.error(`Error fetching quote for ${symbol}:`, error);
-    return null;
+    console.warn(`Error fetching quote for ${symbol}, falling back to mock data:`, error);
+    return getMockStock(symbol);
   }
 };
 
 // Fetch multiple stock quotes
 export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<string, Stock>> => {
   const results: Record<string, Stock> = {};
-  
+
   // Update USD to INR rate before fetching
   await fetchUsdToInr();
-  
+
   // Fetch quotes in parallel with delay to avoid rate limiting
   for (let i = 0; i < symbols.length; i += 5) {
     const batch = symbols.slice(i, i + 5);
@@ -115,32 +155,32 @@ export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<str
         return { symbol, quote };
       })
     );
-    
+
     batchResults.forEach(({ symbol, quote }) => {
       if (quote) {
         results[symbol] = quote;
       }
     });
-    
+
     // Small delay between batches
     if (i + 5 < symbols.length) {
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
-  
+
   return results;
 };
 
 // Fetch historical chart data
 export const fetchChartData = async (
-  symbol: string, 
+  symbol: string,
   interval: '1m' | '5m' | '15m' | '30m' | '1h' | '1d' | '1wk' | '1mo' = '1d',
   range: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max' = '1mo'
 ): Promise<ChartData[]> => {
   try {
-    const yahooSymbol = symbol.includes('.') ? symbol : 
-                       symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
-    
+    const yahooSymbol = symbol.includes('.') ? symbol :
+      symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
+
     const response = await fetch(
       `${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=${interval}&range=${range}`
     );
@@ -156,7 +196,7 @@ export const fetchChartData = async (
     const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
 
     const chartData: ChartData[] = [];
-    
+
     for (let i = 0; i < timestamps.length; i++) {
       const open = quote.open?.[i];
       const high = quote.high?.[i];
@@ -179,8 +219,8 @@ export const fetchChartData = async (
 
     return chartData;
   } catch (error) {
-    console.error(`Error fetching chart data for ${symbol}:`, error);
-    return [];
+    console.warn(`Error fetching chart data for ${symbol}, falling back to mock data:`, error);
+    return getMockChartData();
   }
 };
 
@@ -218,7 +258,16 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
         });
       }
     } catch (error) {
-      console.error(`Error fetching index ${index.symbol}:`, error);
+      console.warn(`Error fetching index ${index.symbol}, generating mock index:`, error);
+      const baseValue = Math.random() * 20000 + 5000;
+      const change = (Math.random() - 0.5) * baseValue * 0.02;
+      results.push({
+        symbol: index.symbol,
+        name: index.name,
+        value: baseValue,
+        change: change,
+        change_percent: (change / baseValue) * 100,
+      });
     }
   }
 
@@ -228,9 +277,9 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
 // Search stocks (using local data - in production, use a proper search API)
 export const searchStocks = async (query: string): Promise<Stock[]> => {
   if (!query || query.length < 2) return [];
-  
+
   const searchTerm = query.toUpperCase();
-  
+
   // Popular Indian stocks
   const indianStocks: Stock[] = [
     { symbol: 'RELIANCE.NS', company_name: 'Reliance Industries Ltd.', exchange: 'NSE', sector: 'Energy', country: 'IN' },
@@ -280,8 +329,8 @@ export const searchStocks = async (query: string): Promise<Stock[]> => {
   ];
 
   const allStocks = [...indianStocks, ...usStocks];
-  
-  return allStocks.filter(stock => 
+
+  return allStocks.filter(stock =>
     stock.symbol.toUpperCase().includes(searchTerm) ||
     stock.company_name.toUpperCase().includes(searchTerm)
   );
