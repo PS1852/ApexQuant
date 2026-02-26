@@ -6,9 +6,9 @@ import { fetchMultipleQuotes, formatCurrency, formatPercentage } from '@/service
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  TrendingUp,
+  TrendingDown,
   PieChart,
   ArrowRight,
   Wallet,
@@ -27,7 +27,7 @@ export default function Portfolio() {
         const symbols = portfolio.map(item => item.symbol);
         const quotes = await fetchMultipleQuotes(symbols);
         setPrices(quotes);
-        
+
         // Update portfolio with latest prices
         const priceMap: Record<string, number> = {};
         Object.entries(quotes).forEach(([symbol, quote]) => {
@@ -47,7 +47,7 @@ export default function Portfolio() {
   return (
     <div className="min-h-screen bg-slate-950 flex">
       <Sidebar />
-      
+
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
@@ -188,19 +188,19 @@ export default function Portfolio() {
                               </div>
                               <div>
                                 <p className="font-medium text-white">{item.symbol}</p>
-                                <p className="text-sm text-slate-400">{item.company_name}</p>
+                                <p className="text-sm text-slate-400">{item.symbol}</p>
                               </div>
                             </Link>
                           </td>
-                          <td className="text-right py-4 px-4 text-white">{item.quantity}</td>
+                          <td className="text-right py-4 px-4 text-white">{item.shares}</td>
                           <td className="text-right py-4 px-4 text-slate-400">
-                            {formatCurrency(item.avg_buy_price)}
+                            {formatCurrency(item.average_price)}
                           </td>
                           <td className="text-right py-4 px-4 text-white">
-                            {formatCurrency(item.current_price || item.avg_buy_price)}
+                            {formatCurrency(item.current_price || item.average_price)}
                           </td>
                           <td className="text-right py-4 px-4 text-white">
-                            {formatCurrency(item.current_value || item.total_investment)}
+                            {formatCurrency(item.current_value || (item.shares * item.average_price))}
                           </td>
                           <td className="text-right py-4 px-4">
                             <div className={`${(item.unrealized_pnl || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>

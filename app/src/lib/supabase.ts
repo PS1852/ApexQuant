@@ -104,16 +104,13 @@ export const getTransactions = async (userId: string, limit: number = 100) => {
   return { data, error };
 };
 
-export const createTransaction = async (transaction: {
+export const addTransaction = async (transaction: {
   user_id: string;
   symbol: string;
-  company_name: string;
-  exchange: string;
-  transaction_type: 'BUY' | 'SELL';
-  quantity: number;
+  type: 'BUY' | 'SELL';
+  shares: number;
   price: number;
-  total_amount: number;
-  currency?: string;
+  amount: number;
 }) => {
   const { data, error } = await supabase
     .from('transactions')
@@ -136,8 +133,6 @@ export const getWatchlist = async (userId: string) => {
 export const addToWatchlist = async (item: {
   user_id: string;
   symbol: string;
-  company_name: string;
-  exchange: string;
 }) => {
   const { data, error } = await supabase
     .from('watchlist')

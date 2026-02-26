@@ -1,6 +1,11 @@
---- watchlist ---
-id, user_id, symbol, added_at
---- portfolio ---
-id, user_id, symbol, shares, average_price, created_at
---- transactions ---
-id, user_id, symbol, type, shares, price, amount, created_at
+src/lib/supabase.ts(120,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: { id?: string | undefined; user_id: string; symbol: string; type: string; shares: number; price: number; amount: number; created_at?: string | undefined; }, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Argument of type '{ user_id: string; symbol: string; company_name: string; exchange: string; transaction_type: "BUY" | "SELL"; quantity: number; price: number; total_amount: number; currency?: string | undefined; }[]' is not assignable to parameter of type '{ id?: string | undefined; user_id: string; symbol: string; type: string; shares: number; price: number; amount: number; created_at?: string | undefined; }'.
+      Type '{ user_id: string; symbol: string; company_name: string; exchange: string; transaction_type: "BUY" | "SELL"; quantity: number; price: number; total_amount: number; currency?: string | undefined; }[]' is missing the following properties from type '{ id?: string | undefined; user_id: string; symbol: string; type: string; shares: number; price: number; amount: number; created_at?: string | undefined; }': user_id, symbol, type, shares, and 2 more.
+  Overload 2 of 2, '(values: { id?: string | undefined; user_id: string; symbol: string; type: string; shares: number; price: number; amount: number; created_at?: string | undefined; }[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<...>', gave the following error.
+    Type '{ user_id: string; symbol: string; company_name: string; exchange: string; transaction_type: "BUY" | "SELL"; quantity: number; price: number; total_amount: number; currency?: string | undefined; }' is missing the following properties from type '{ id?: string | undefined; user_id: string; symbol: string; type: string; shares: number; price: number; amount: number; created_at?: string | undefined; }': type, shares, amount
+src/pages/Portfolio.tsx(191,77): error TS2339: Property 'company_name' does not exist on type 'PortfolioItem'.
+src/pages/Portfolio.tsx(195,81): error TS2339: Property 'quantity' does not exist on type 'PortfolioItem'.
+src/pages/Portfolio.tsx(197,50): error TS2339: Property 'avg_buy_price' does not exist on type 'PortfolioItem'.
+src/pages/Portfolio.tsx(200,72): error TS2339: Property 'avg_buy_price' does not exist on type 'PortfolioItem'.
+src/pages/Portfolio.tsx(203,72): error TS2339: Property 'total_investment' does not exist on type 'PortfolioItem'.
