@@ -12,4 +12,18 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      '/yahoo-api': {
+        target: 'https://query1.finance.yahoo.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/yahoo-api/, ''),
+      },
+      '/finnhub-api': {
+        target: 'https://finnhub.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/finnhub-api/, ''),
+      },
+    },
+  },
 });

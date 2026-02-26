@@ -1,9 +1,17 @@
-import { supabase } from '@/lib/supabase';
+// stockService.ts — Real-time stock data for ApexQuant
 import type { Stock, ChartData, MarketIndex } from '@/types';
 
 // ============ API KEYS ============
 const FINNHUB_KEY = 'd6g2o99r01qqnmbqhvsgd6g2o99r01qqnmbqhvt0';
-const YAHOO_FINANCE_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
+
+// Use Vite proxy in dev to avoid CORS, direct URLs in production
+const isDev = import.meta.env.DEV;
+const YAHOO_FINANCE_BASE = isDev
+  ? '/yahoo-api/v8/finance/chart'
+  : 'https://query1.finance.yahoo.com/v8/finance/chart';
+const FINNHUB_BASE = isDev
+  ? '/finnhub-api/api/v1'
+  : 'https://finnhub.io/api/v1';
 
 // ============ CURRENCY CONVERSION ============
 let usdToInrRate = 83.5;
@@ -49,26 +57,38 @@ export const formatPercentage = (value: number): string => {
 export const searchStocks = async (query: string): Promise<Stock[]> => {
   if (!query || query.length < 1) return [];
 
-  const { data, error } = await supabase
-    .from('stocks')
-    .select('symbol, name, exchange, market, sector, currency')
-    .or(`symbol.ilike.%${query}%,name.ilike.%${query}%`)
-    .eq('is_active', true)
-    .limit(20);
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  if (error || !data) {
-    console.warn('Search error, falling back to local:', error);
+    const url = `${supabaseUrl}/rest/v1/stocks?select=symbol,name,exchange,market,sector,currency&or=(symbol.ilike.*${query}*,name.ilike.*${query}*)&is_active=eq.true&limit=20`;
+
+    const res = await fetch(url, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+      },
+    });
+
+    if (!res.ok) {
+      console.warn('Search failed:', res.status);
+      return [];
+    }
+
+    const data = await res.json();
+
+    return data.map((s: any) => ({
+      symbol: s.market === 'IN' ? `${s.symbol}.NS` : s.symbol,
+      company_name: s.name,
+      exchange: s.exchange,
+      sector: s.sector,
+      country: s.market,
+      currency: s.currency || (s.market === 'IN' ? 'INR' : 'USD'),
+    }));
+  } catch (err) {
+    console.warn('Search error:', err);
     return [];
   }
-
-  return data.map((s: any) => ({
-    symbol: s.market === 'IN' ? `${s.symbol}.NS` : s.symbol,
-    company_name: s.name,
-    exchange: s.exchange,
-    sector: s.sector,
-    country: s.market,
-    currency: s.currency || (s.market === 'IN' ? 'INR' : 'USD'),
-  }));
 };
 
 // ============ FETCH STOCK QUOTE ============
@@ -124,10 +144,10 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
 // Finnhub fallback for US stocks
 const fetchFinnhubQuote = async (symbol: string): Promise<Stock | null> => {
   try {
-    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
+    const res = await fetch(`${FINNHUB_BASE}/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
     if (res.status === 429) {
       await new Promise(r => setTimeout(r, 1000));
-      const retryRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
+      const retryRes = await fetch(`${FINNHUB_BASE}/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
       const d = await retryRes.json();
       return buildFinnhubStock(symbol, d);
     }
@@ -248,7 +268,7 @@ const fetchFinnhubCandles = async (symbol: string, range: string): Promise<Chart
     const from = to - config.days * 86400;
 
     const res = await fetch(
-      `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=${config.resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
+      `${FINNHUB_BASE}/stock/candle?symbol=${symbol}&resolution=${config.resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
     );
     const d = await res.json();
 
