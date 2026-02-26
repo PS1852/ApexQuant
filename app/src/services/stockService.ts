@@ -1,52 +1,13 @@
+import { supabase } from '@/lib/supabase';
 import type { Stock, ChartData, MarketIndex } from '@/types';
 
-// Free stock data API using Yahoo Finance proxy
+// ============ API KEYS ============
+const FINNHUB_KEY = 'd6g2o99r01qqnmbqhvsgd6g2o99r01qqnmbqhvt0';
 const YAHOO_FINANCE_BASE = 'https://query1.finance.yahoo.com/v8/finance/chart';
 
-// USD to INR conversion rate (in production, this should be fetched from an API)
+// ============ CURRENCY CONVERSION ============
 let usdToInrRate = 83.5;
 
-// Fallback Mock Data Generator
-const getMockStock = (symbol: string): Stock => {
-  const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
-  const basePrice = Math.random() * 5000 + 100;
-  const change = (Math.random() - 0.5) * basePrice * 0.05;
-  let price = isUSStock ? basePrice * usdToInrRate : basePrice;
-  let changeInr = isUSStock ? change * usdToInrRate : change;
-
-  return {
-    symbol,
-    company_name: symbol + ' (Mock Data)',
-    exchange: isUSStock ? 'NASDAQ' : 'NSE',
-    current_price: price,
-    change: changeInr,
-    change_percent: (change / basePrice) * 100,
-    currency: 'INR',
-    country: isUSStock ? 'US' : 'IN'
-  };
-};
-
-const getMockChartData = (): ChartData[] => {
-  const data: ChartData[] = [];
-  let currentPrice = 1000;
-  for (let i = 30; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    const change = (Math.random() - 0.5) * 50;
-    currentPrice += change;
-    data.push({
-      time: date.toISOString().split('T')[0],
-      open: currentPrice * 0.99,
-      high: currentPrice * 1.02,
-      low: currentPrice * 0.98,
-      close: currentPrice,
-      volume: Math.floor(Math.random() * 100000)
-    });
-  }
-  return data;
-};
-
-// Fetch USD to INR conversion rate
 export const fetchUsdToInr = async (): Promise<number> => {
   try {
     const response = await fetch(`${YAHOO_FINANCE_BASE}/INR=X?interval=1d&range=1d`);
@@ -55,29 +16,23 @@ export const fetchUsdToInr = async (): Promise<number> => {
       usdToInrRate = data.chart.result[0].meta.regularMarketPrice;
     }
     return usdToInrRate;
-  } catch (error) {
-    console.error('Error fetching USD to INR:', error);
+  } catch {
     return usdToInrRate;
   }
 };
 
-// Convert USD to INR
-export const convertUsdToInr = (usdAmount: number): number => {
-  return usdAmount * usdToInrRate;
-};
+export const convertUsdToInr = (usdAmount: number): number => usdAmount * usdToInrRate;
 
-// Format currency
+// ============ FORMATTING ============
 export const formatCurrency = (amount: number, currency: string = 'INR'): string => {
-  const formatter = new Intl.NumberFormat('en-IN', {
+  return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: currency,
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
-  return formatter.format(amount);
+  }).format(amount);
 };
 
-// Format number with commas
 export const formatNumber = (num: number, decimals: number = 2): string => {
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: decimals,
@@ -85,16 +40,41 @@ export const formatNumber = (num: number, decimals: number = 2): string => {
   }).format(num);
 };
 
-// Format percentage
 export const formatPercentage = (value: number): string => {
   const sign = value >= 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}%`;
 };
 
-// Fetch stock quote from Yahoo Finance
+// ============ STOCK SEARCH (from Supabase DB — 24000+ stocks) ============
+export const searchStocks = async (query: string): Promise<Stock[]> => {
+  if (!query || query.length < 1) return [];
+
+  const { data, error } = await supabase
+    .from('stocks')
+    .select('symbol, name, exchange, market, sector, currency')
+    .or(`symbol.ilike.%${query}%,name.ilike.%${query}%`)
+    .eq('is_active', true)
+    .limit(20);
+
+  if (error || !data) {
+    console.warn('Search error, falling back to local:', error);
+    return [];
+  }
+
+  return data.map((s: any) => ({
+    symbol: s.market === 'IN' ? `${s.symbol}.NS` : s.symbol,
+    company_name: s.name,
+    exchange: s.exchange,
+    sector: s.sector,
+    country: s.market,
+    currency: s.currency || (s.market === 'IN' ? 'INR' : 'USD'),
+  }));
+};
+
+// ============ FETCH STOCK QUOTE ============
 export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => {
   try {
-    // Handle Indian stocks (.NS for NSE, .BO for BSE)
+    const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
     const yahooSymbol = symbol.includes('.') ? symbol :
       symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
 
@@ -102,20 +82,18 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
     const data = await response.json();
 
     if (!data.chart?.result?.[0]) {
-      console.warn(`No data found for symbol: ${symbol}`);
+      // Fallback: try Finnhub for US stocks
+      if (!isIndian) {
+        return await fetchFinnhubQuote(symbol);
+      }
       return null;
     }
 
-    const result = data.chart.result[0];
-    const meta = result.meta;
-
-    const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
-
+    const meta = data.chart.result[0].meta;
     let price = meta.regularMarketPrice || 0;
     let previousClose = meta.previousClose || meta.chartPreviousClose || price;
 
-    // Convert US stock prices to INR
-    if (isUSStock) {
+    if (!isIndian) {
       price = convertUsdToInr(price);
       previousClose = convertUsdToInr(previousClose);
     }
@@ -124,29 +102,63 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
 
     return {
-      symbol: symbol,
+      symbol,
       company_name: meta.shortName || meta.longName || symbol,
-      exchange: meta.exchangeName || (isUSStock ? 'NASDAQ' : 'NSE'),
+      exchange: meta.exchangeName || (isIndian ? 'NSE' : 'NASDAQ'),
       current_price: price,
-      change: change,
+      change,
       change_percent: changePercent,
-      currency: 'INR', // Always show in INR
-      country: isUSStock ? 'US' : 'IN',
+      currency: 'INR',
+      country: isIndian ? 'IN' : 'US',
     };
   } catch (error) {
-    console.warn(`Error fetching quote for ${symbol}, falling back to mock data:`, error);
-    return getMockStock(symbol);
+    console.warn(`Yahoo Finance error for ${symbol}:`, error);
+    // Fallback to Finnhub for US stocks
+    if (!symbol.includes('.NS') && !symbol.includes('.BO')) {
+      return await fetchFinnhubQuote(symbol);
+    }
+    return null;
   }
 };
 
-// Fetch multiple stock quotes
+// Finnhub fallback for US stocks
+const fetchFinnhubQuote = async (symbol: string): Promise<Stock | null> => {
+  try {
+    const res = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
+    if (res.status === 429) {
+      await new Promise(r => setTimeout(r, 1000));
+      const retryRes = await fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
+      const d = await retryRes.json();
+      return buildFinnhubStock(symbol, d);
+    }
+    const d = await res.json();
+    return buildFinnhubStock(symbol, d);
+  } catch {
+    return null;
+  }
+};
+
+const buildFinnhubStock = (symbol: string, d: any): Stock | null => {
+  if (!d || d.c === 0) return null;
+  const priceInr = convertUsdToInr(d.c);
+  const prevCloseInr = convertUsdToInr(d.pc);
+  return {
+    symbol,
+    company_name: symbol,
+    exchange: 'US',
+    current_price: priceInr,
+    change: priceInr - prevCloseInr,
+    change_percent: d.pc > 0 ? ((d.c - d.pc) / d.pc) * 100 : 0,
+    currency: 'INR',
+    country: 'US',
+  };
+};
+
+// ============ FETCH MULTIPLE QUOTES ============
 export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<string, Stock>> => {
   const results: Record<string, Stock> = {};
-
-  // Update USD to INR rate before fetching
   await fetchUsdToInr();
 
-  // Fetch quotes in parallel with delay to avoid rate limiting
   for (let i = 0; i < symbols.length; i += 5) {
     const batch = symbols.slice(i, i + 5);
     const batchResults = await Promise.all(
@@ -155,48 +167,43 @@ export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<str
         return { symbol, quote };
       })
     );
-
     batchResults.forEach(({ symbol, quote }) => {
-      if (quote) {
-        results[symbol] = quote;
-      }
+      if (quote) results[symbol] = quote;
     });
-
-    // Small delay between batches
     if (i + 5 < symbols.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
-
   return results;
 };
 
-// Fetch historical chart data
+// ============ CHART DATA ============
 export const fetchChartData = async (
   symbol: string,
   interval: '1m' | '5m' | '15m' | '30m' | '1h' | '1d' | '1wk' | '1mo' = '1d',
   range: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max' = '1mo'
 ): Promise<ChartData[]> => {
   try {
+    const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
     const yahooSymbol = symbol.includes('.') ? symbol :
       symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
 
-    const response = await fetch(
-      `${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=${interval}&range=${range}`
-    );
+    const response = await fetch(`${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=${interval}&range=${range}`);
     const data = await response.json();
 
     if (!data.chart?.result?.[0]) {
+      // Fallback: try Finnhub candles for US stocks
+      if (!isIndian) {
+        return await fetchFinnhubCandles(symbol, range);
+      }
       return [];
     }
 
     const result = data.chart.result[0];
     const timestamps = result.timestamp || [];
     const quote = result.indicators?.quote?.[0] || {};
-    const isUSStock = !symbol.includes('.NS') && !symbol.includes('.BO');
 
     const chartData: ChartData[] = [];
-
     for (let i = 0; i < timestamps.length; i++) {
       const open = quote.open?.[i];
       const high = quote.high?.[i];
@@ -205,26 +212,62 @@ export const fetchChartData = async (
       const volume = quote.volume?.[i];
 
       if (open && high && low && close) {
-        const conversionFactor = isUSStock ? usdToInrRate : 1;
+        const factor = isIndian ? 1 : usdToInrRate;
         chartData.push({
           time: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-          open: open * conversionFactor,
-          high: high * conversionFactor,
-          low: low * conversionFactor,
-          close: close * conversionFactor,
+          open: open * factor,
+          high: high * factor,
+          low: low * factor,
+          close: close * factor,
           volume: volume || 0,
         });
       }
     }
-
     return chartData;
-  } catch (error) {
-    console.warn(`Error fetching chart data for ${symbol}, falling back to mock data:`, error);
-    return getMockChartData();
+  } catch {
+    return [];
   }
 };
 
-// Fetch market indices
+// Finnhub candles fallback
+const fetchFinnhubCandles = async (symbol: string, range: string): Promise<ChartData[]> => {
+  try {
+    const rangeMap: Record<string, { resolution: string; days: number }> = {
+      '1d': { resolution: '5', days: 1 },
+      '5d': { resolution: '30', days: 5 },
+      '1mo': { resolution: 'D', days: 30 },
+      '3mo': { resolution: 'D', days: 90 },
+      '6mo': { resolution: 'D', days: 180 },
+      '1y': { resolution: 'W', days: 365 },
+      '5y': { resolution: 'W', days: 1825 },
+      'max': { resolution: 'M', days: 7300 },
+    };
+
+    const config = rangeMap[range] || rangeMap['1mo'];
+    const to = Math.floor(Date.now() / 1000);
+    const from = to - config.days * 86400;
+
+    const res = await fetch(
+      `https://finnhub.io/api/v1/stock/candle?symbol=${symbol}&resolution=${config.resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
+    );
+    const d = await res.json();
+
+    if (d.s !== 'ok' || !d.t) return [];
+
+    return d.t.map((t: number, i: number) => ({
+      time: new Date(t * 1000).toISOString().split('T')[0],
+      open: convertUsdToInr(d.o[i]),
+      high: convertUsdToInr(d.h[i]),
+      low: convertUsdToInr(d.l[i]),
+      close: convertUsdToInr(d.c[i]),
+      volume: d.v[i] || 0,
+    }));
+  } catch {
+    return [];
+  }
+};
+
+// ============ MARKET INDICES ============
 export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
   const indices = [
     { symbol: '^NSEI', name: 'NIFTY 50' },
@@ -237,9 +280,7 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
 
   for (const index of indices) {
     try {
-      const response = await fetch(
-        `${YAHOO_FINANCE_BASE}/${index.symbol}?interval=1d&range=1d`
-      );
+      const response = await fetch(`${YAHOO_FINANCE_BASE}/${index.symbol}?interval=1d&range=1d`);
       const data = await response.json();
 
       if (data.chart?.result?.[0]) {
@@ -253,96 +294,31 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
           symbol: index.symbol,
           name: index.name,
           value: price,
-          change: change,
+          change,
           change_percent: changePercent,
         });
       }
-    } catch (error) {
-      console.warn(`Error fetching index ${index.symbol}, generating mock index:`, error);
+    } catch {
       const baseValue = Math.random() * 20000 + 5000;
       const change = (Math.random() - 0.5) * baseValue * 0.02;
       results.push({
         symbol: index.symbol,
         name: index.name,
         value: baseValue,
-        change: change,
+        change,
         change_percent: (change / baseValue) * 100,
       });
     }
   }
-
   return results;
 };
 
-// Search stocks (using local data - in production, use a proper search API)
-export const searchStocks = async (query: string): Promise<Stock[]> => {
-  if (!query || query.length < 2) return [];
-
-  const searchTerm = query.toUpperCase();
-
-  // Popular Indian stocks
-  const indianStocks: Stock[] = [
-    { symbol: 'RELIANCE.NS', company_name: 'Reliance Industries Ltd.', exchange: 'NSE', sector: 'Energy', country: 'IN' },
-    { symbol: 'TCS.NS', company_name: 'Tata Consultancy Services Ltd.', exchange: 'NSE', sector: 'IT', country: 'IN' },
-    { symbol: 'HDFCBANK.NS', company_name: 'HDFC Bank Ltd.', exchange: 'NSE', sector: 'Banking', country: 'IN' },
-    { symbol: 'INFY.NS', company_name: 'Infosys Ltd.', exchange: 'NSE', sector: 'IT', country: 'IN' },
-    { symbol: 'ICICIBANK.NS', company_name: 'ICICI Bank Ltd.', exchange: 'NSE', sector: 'Banking', country: 'IN' },
-    { symbol: 'HINDUNILVR.NS', company_name: 'Hindustan Unilever Ltd.', exchange: 'NSE', sector: 'FMCG', country: 'IN' },
-    { symbol: 'SBIN.NS', company_name: 'State Bank of India', exchange: 'NSE', sector: 'Banking', country: 'IN' },
-    { symbol: 'BHARTIARTL.NS', company_name: 'Bharti Airtel Ltd.', exchange: 'NSE', sector: 'Telecom', country: 'IN' },
-    { symbol: 'ITC.NS', company_name: 'ITC Ltd.', exchange: 'NSE', sector: 'FMCG', country: 'IN' },
-    { symbol: 'KOTAKBANK.NS', company_name: 'Kotak Mahindra Bank Ltd.', exchange: 'NSE', sector: 'Banking', country: 'IN' },
-    { symbol: 'LT.NS', company_name: 'Larsen & Toubro Ltd.', exchange: 'NSE', sector: 'Construction', country: 'IN' },
-    { symbol: 'AXISBANK.NS', company_name: 'Axis Bank Ltd.', exchange: 'NSE', sector: 'Banking', country: 'IN' },
-    { symbol: 'ASIANPAINT.NS', company_name: 'Asian Paints Ltd.', exchange: 'NSE', sector: 'Consumer', country: 'IN' },
-    { symbol: 'MARUTI.NS', company_name: 'Maruti Suzuki India Ltd.', exchange: 'NSE', sector: 'Auto', country: 'IN' },
-    { symbol: 'TITAN.NS', company_name: 'Titan Company Ltd.', exchange: 'NSE', sector: 'Consumer', country: 'IN' },
-    { symbol: 'SUNPHARMA.NS', company_name: 'Sun Pharmaceutical Industries Ltd.', exchange: 'NSE', sector: 'Pharma', country: 'IN' },
-    { symbol: 'BAJFINANCE.NS', company_name: 'Bajaj Finance Ltd.', exchange: 'NSE', sector: 'Finance', country: 'IN' },
-    { symbol: 'WIPRO.NS', company_name: 'Wipro Ltd.', exchange: 'NSE', sector: 'IT', country: 'IN' },
-    { symbol: 'NESTLEIND.NS', company_name: 'Nestle India Ltd.', exchange: 'NSE', sector: 'FMCG', country: 'IN' },
-    { symbol: 'ULTRACEMCO.NS', company_name: 'UltraTech Cement Ltd.', exchange: 'NSE', sector: 'Cement', country: 'IN' },
-    { symbol: 'TATAMOTORS.NS', company_name: 'Tata Motors Ltd.', exchange: 'NSE', sector: 'Auto', country: 'IN' },
-    { symbol: 'ADANIENT.NS', company_name: 'Adani Enterprises Ltd.', exchange: 'NSE', sector: 'Conglomerate', country: 'IN' },
-    { symbol: 'POWERGRID.NS', company_name: 'Power Grid Corporation of India Ltd.', exchange: 'NSE', sector: 'Power', country: 'IN' },
-    { symbol: 'NTPC.NS', company_name: 'NTPC Ltd.', exchange: 'NSE', sector: 'Power', country: 'IN' },
-    { symbol: 'COALINDIA.NS', company_name: 'Coal India Ltd.', exchange: 'NSE', sector: 'Mining', country: 'IN' },
-  ];
-
-  // US stocks
-  const usStocks: Stock[] = [
-    { symbol: 'AAPL', company_name: 'Apple Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'MSFT', company_name: 'Microsoft Corporation', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'GOOGL', company_name: 'Alphabet Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'AMZN', company_name: 'Amazon.com Inc.', exchange: 'NASDAQ', sector: 'Consumer', country: 'US' },
-    { symbol: 'TSLA', company_name: 'Tesla Inc.', exchange: 'NASDAQ', sector: 'Auto', country: 'US' },
-    { symbol: 'META', company_name: 'Meta Platforms Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'NVDA', company_name: 'NVIDIA Corporation', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'NFLX', company_name: 'Netflix Inc.', exchange: 'NASDAQ', sector: 'Entertainment', country: 'US' },
-    { symbol: 'AMD', company_name: 'Advanced Micro Devices Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'INTC', company_name: 'Intel Corporation', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'AMD', company_name: 'Advanced Micro Devices Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'UBER', company_name: 'Uber Technologies Inc.', exchange: 'NYSE', sector: 'Technology', country: 'US' },
-    { symbol: 'COIN', company_name: 'Coinbase Global Inc.', exchange: 'NASDAQ', sector: 'Technology', country: 'US' },
-    { symbol: 'PLTR', company_name: 'Palantir Technologies Inc.', exchange: 'NYSE', sector: 'Technology', country: 'US' },
-    { symbol: 'RIVN', company_name: 'Rivian Automotive Inc.', exchange: 'NASDAQ', sector: 'Auto', country: 'US' },
-  ];
-
-  const allStocks = [...indianStocks, ...usStocks];
-
-  return allStocks.filter(stock =>
-    stock.symbol.toUpperCase().includes(searchTerm) ||
-    stock.company_name.toUpperCase().includes(searchTerm)
-  );
-};
-
-// Get trending stocks
+// ============ TRENDING STOCKS ============
 export const getTrendingStocks = async (): Promise<Stock[]> => {
   const trendingSymbols = [
     'RELIANCE.NS', 'TCS.NS', 'HDFCBANK.NS', 'INFY.NS', 'ICICIBANK.NS',
     'AAPL', 'MSFT', 'GOOGL', 'TSLA', 'NVDA'
   ];
-
   const quotes = await fetchMultipleQuotes(trendingSymbols);
   return Object.values(quotes);
 };
