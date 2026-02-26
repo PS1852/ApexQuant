@@ -21,67 +21,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchOrCreateProfile = useCallback(async (currentUser: any) => {
     try {
-      // First try to fetch existing profile
-      const { data, error } = await supabase
+      console.log('[Auth] Fetching profile for user', currentUser.id);
+
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', currentUser.id)
-        .single();
+        .maybeSingle(); // Better than single() which throws PGRST116 on 0 rows
 
       if (data) {
+        console.log('[Auth] Profile found:', data.balance);
         setProfile(data as Profile);
         return;
       }
 
-      // If profile doesn't exist (PGRST116 = not found), create one
-      if (error && (error.code === 'PGRST116' || error.message?.includes('not found'))) {
-        console.log('Profile not found, creating one with ₹2000 balance...');
-        const newProfile = {
-          id: currentUser.id,
-          email: currentUser.email || '',
-          full_name: currentUser.user_metadata?.full_name ||
-            currentUser.user_metadata?.name ||
-            currentUser.email?.split('@')[0] || 'Trader',
-          avatar_url: currentUser.user_metadata?.avatar_url ||
-            currentUser.user_metadata?.picture || null,
-          balance: 2000.00,
-        };
+      console.log('[Auth] Profile not found, creating one with ₹2000 balance...');
+      const newProfile = {
+        id: currentUser.id,
+        email: currentUser.email || '',
+        full_name: currentUser.user_metadata?.full_name ||
+          currentUser.user_metadata?.name ||
+          currentUser.email?.split('@')[0] || 'Trader',
+        avatar_url: currentUser.user_metadata?.avatar_url ||
+          currentUser.user_metadata?.picture || null,
+        balance: 2000.00,
+        currency: 'INR'
+      };
 
-        const { data: created, error: createError } = await supabase
-          .from('profiles')
-          .upsert([newProfile], { onConflict: 'id' })
-          .select()
-          .single();
+      const { data: created, error: createError } = await supabase
+        .from('profiles')
+        .upsert([newProfile], { onConflict: 'id' })
+        .select()
+        .maybeSingle();
 
-        if (createError) {
-          console.error('Error creating profile:', createError);
-          // Still set a local profile so the UI works
-          setProfile({
-            ...newProfile,
-            currency: 'INR',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          } as Profile);
-        } else if (created) {
-          setProfile(created as Profile);
-        }
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-        // Set a fallback profile from user metadata so UI doesn't break
-        setProfile({
-          id: currentUser.id,
-          email: currentUser.email || '',
-          full_name: currentUser.user_metadata?.full_name ||
-            currentUser.user_metadata?.name || 'Trader',
-          avatar_url: currentUser.user_metadata?.avatar_url || null,
-          balance: 2000.00,
-          currency: 'INR',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        } as Profile);
+      if (createError) {
+        console.error('[Auth] Error creating profile:', createError);
+        setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
+      } else if (created) {
+        console.log('[Auth] Profile created successfully:', created.balance);
+        setProfile(created as Profile);
+      } else {
+        // Fallback
+        setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
       }
     } catch (error) {
-      console.error('Error in fetchOrCreateProfile:', error);
+      console.error('[Auth] Error in fetchOrCreateProfile:', error);
     }
   }, []);
 
@@ -94,16 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout to never get stuck loading forever
-    const safetyTimer = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('Auth loading safety timeout reached, forcing load complete');
-        setLoading(false);
-      }
-    }, 6000);
-
     const initAuth = async () => {
-      // Prevent double init in StrictMode
       if (initDone.current) return;
       initDone.current = true;
 
@@ -118,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await fetchOrCreateProfile(initialSession.user);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
+        console.error('[Auth] init error:', error);
       } finally {
         if (mounted) {
           setLoading(false);
@@ -155,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [fetchOrCreateProfile]);

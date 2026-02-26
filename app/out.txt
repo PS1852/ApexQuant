@@ -1,0 +1,2 @@
+src/contexts/AuthContext.tsx(26,21): error TS6133: 'error' is declared but its value is never read.
+src/contexts/AuthContext.tsx(86,59): error TS6133: 'authErr' is declared but its value is never read.
