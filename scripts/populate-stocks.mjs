@@ -32,173 +32,80 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 
 // ============ INDIAN STOCKS (NSE) ============
 async function populateNSEStocks() {
-    console.log('\n📊 Fetching NSE equity list...');
+    console.log('\n📊 Fetching COMPLETE NSE equity list...');
 
-    // NSE top stocks - comprehensive list of ~200+ actively traded stocks
-    // The official NSE CSV endpoint often blocks automated requests,
-    // so we use a curated comprehensive list of NSE-listed equities
-    const nseStocks = [
-        // NIFTY 50
-        { symbol: 'RELIANCE', name: 'Reliance Industries Ltd', sector: 'Energy' },
-        { symbol: 'TCS', name: 'Tata Consultancy Services Ltd', sector: 'IT' },
-        { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd', sector: 'Banking' },
-        { symbol: 'INFY', name: 'Infosys Ltd', sector: 'IT' },
-        { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd', sector: 'Banking' },
-        { symbol: 'HINDUNILVR', name: 'Hindustan Unilever Ltd', sector: 'FMCG' },
-        { symbol: 'SBIN', name: 'State Bank of India', sector: 'Banking' },
-        { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd', sector: 'Telecom' },
-        { symbol: 'ITC', name: 'ITC Ltd', sector: 'FMCG' },
-        { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank Ltd', sector: 'Banking' },
-        { symbol: 'LT', name: 'Larsen & Toubro Ltd', sector: 'Construction' },
-        { symbol: 'AXISBANK', name: 'Axis Bank Ltd', sector: 'Banking' },
-        { symbol: 'ASIANPAINT', name: 'Asian Paints Ltd', sector: 'Consumer' },
-        { symbol: 'MARUTI', name: 'Maruti Suzuki India Ltd', sector: 'Auto' },
-        { symbol: 'TITAN', name: 'Titan Company Ltd', sector: 'Consumer' },
-        { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical Industries Ltd', sector: 'Pharma' },
-        { symbol: 'BAJFINANCE', name: 'Bajaj Finance Ltd', sector: 'Finance' },
-        { symbol: 'WIPRO', name: 'Wipro Ltd', sector: 'IT' },
-        { symbol: 'NESTLEIND', name: 'Nestle India Ltd', sector: 'FMCG' },
-        { symbol: 'ULTRACEMCO', name: 'UltraTech Cement Ltd', sector: 'Cement' },
-        { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd', sector: 'Auto' },
-        { symbol: 'ADANIENT', name: 'Adani Enterprises Ltd', sector: 'Conglomerate' },
-        { symbol: 'POWERGRID', name: 'Power Grid Corporation of India Ltd', sector: 'Power' },
-        { symbol: 'NTPC', name: 'NTPC Ltd', sector: 'Power' },
-        { symbol: 'COALINDIA', name: 'Coal India Ltd', sector: 'Mining' },
-        { symbol: 'BAJAJFINSV', name: 'Bajaj Finserv Ltd', sector: 'Finance' },
-        { symbol: 'HCLTECH', name: 'HCL Technologies Ltd', sector: 'IT' },
-        { symbol: 'ONGC', name: 'Oil and Natural Gas Corporation Ltd', sector: 'Energy' },
-        { symbol: 'TATASTEEL', name: 'Tata Steel Ltd', sector: 'Metals' },
-        { symbol: 'JSWSTEEL', name: 'JSW Steel Ltd', sector: 'Metals' },
-        { symbol: 'TECHM', name: 'Tech Mahindra Ltd', sector: 'IT' },
-        { symbol: 'INDUSINDBK', name: 'IndusInd Bank Ltd', sector: 'Banking' },
-        { symbol: 'ADANIPORTS', name: 'Adani Ports and Special Economic Zone Ltd', sector: 'Infrastructure' },
-        { symbol: 'M&M', name: 'Mahindra & Mahindra Ltd', sector: 'Auto' },
-        { symbol: 'DRREDDY', name: "Dr. Reddy's Laboratories Ltd", sector: 'Pharma' },
-        { symbol: 'CIPLA', name: 'Cipla Ltd', sector: 'Pharma' },
-        { symbol: 'DIVISLAB', name: "Divi's Laboratories Ltd", sector: 'Pharma' },
-        { symbol: 'GRASIM', name: 'Grasim Industries Ltd', sector: 'Cement' },
-        { symbol: 'EICHERMOT', name: 'Eicher Motors Ltd', sector: 'Auto' },
-        { symbol: 'BPCL', name: 'Bharat Petroleum Corporation Ltd', sector: 'Energy' },
-        { symbol: 'APOLLOHOSP', name: 'Apollo Hospitals Enterprise Ltd', sector: 'Healthcare' },
-        { symbol: 'HEROMOTOCO', name: 'Hero MotoCorp Ltd', sector: 'Auto' },
-        { symbol: 'BRITANNIA', name: 'Britannia Industries Ltd', sector: 'FMCG' },
-        { symbol: 'SBILIFE', name: 'SBI Life Insurance Company Ltd', sector: 'Insurance' },
-        { symbol: 'HDFCLIFE', name: 'HDFC Life Insurance Company Ltd', sector: 'Insurance' },
-        { symbol: 'HINDALCO', name: 'Hindalco Industries Ltd', sector: 'Metals' },
-        { symbol: 'TATACONSUM', name: 'Tata Consumer Products Ltd', sector: 'FMCG' },
-        { symbol: 'BAJAJ-AUTO', name: 'Bajaj Auto Ltd', sector: 'Auto' },
-        { symbol: 'WIPRO', name: 'Wipro Ltd', sector: 'IT' },
-        { symbol: 'UPL', name: 'UPL Ltd', sector: 'Chemicals' },
-        // NIFTY NEXT 50
-        { symbol: 'ADANIGREEN', name: 'Adani Green Energy Ltd', sector: 'Energy' },
-        { symbol: 'AMBUJACEM', name: 'Ambuja Cements Ltd', sector: 'Cement' },
-        { symbol: 'BANKBARODA', name: 'Bank of Baroda', sector: 'Banking' },
-        { symbol: 'BERGEPAINT', name: 'Berger Paints India Ltd', sector: 'Consumer' },
-        { symbol: 'BIOCON', name: 'Biocon Ltd', sector: 'Pharma' },
-        { symbol: 'BOSCHLTD', name: 'Bosch Ltd', sector: 'Auto' },
-        { symbol: 'CANBK', name: 'Canara Bank', sector: 'Banking' },
-        { symbol: 'CHOLAFIN', name: 'Cholamandalam Investment and Finance Company Ltd', sector: 'Finance' },
-        { symbol: 'COLPAL', name: 'Colgate-Palmolive (India) Ltd', sector: 'FMCG' },
-        { symbol: 'DLF', name: 'DLF Ltd', sector: 'Real Estate' },
-        { symbol: 'DABUR', name: 'Dabur India Ltd', sector: 'FMCG' },
-        { symbol: 'GAIL', name: 'GAIL (India) Ltd', sector: 'Energy' },
-        { symbol: 'GODREJCP', name: 'Godrej Consumer Products Ltd', sector: 'FMCG' },
-        { symbol: 'HAVELLS', name: 'Havells India Ltd', sector: 'Consumer Durables' },
-        { symbol: 'ICICIPRULI', name: 'ICICI Prudential Life Insurance Company Ltd', sector: 'Insurance' },
-        { symbol: 'ICICIGI', name: 'ICICI Lombard General Insurance Company Ltd', sector: 'Insurance' },
-        { symbol: 'IOC', name: 'Indian Oil Corporation Ltd', sector: 'Energy' },
-        { symbol: 'IRCTC', name: 'Indian Railway Catering and Tourism Corporation Ltd', sector: 'Tourism' },
-        { symbol: 'INDIGO', name: 'InterGlobe Aviation Ltd', sector: 'Aviation' },
-        { symbol: 'JINDALSTEL', name: 'Jindal Steel & Power Ltd', sector: 'Metals' },
-        { symbol: 'JUBLFOOD', name: 'Jubilant FoodWorks Ltd', sector: 'Consumer' },
-        { symbol: 'LUPIN', name: 'Lupin Ltd', sector: 'Pharma' },
-        { symbol: 'MARICO', name: 'Marico Ltd', sector: 'FMCG' },
-        { symbol: 'MUTHOOTFIN', name: 'Muthoot Finance Ltd', sector: 'Finance' },
-        { symbol: 'NAUKRI', name: 'Info Edge (India) Ltd', sector: 'IT' },
-        { symbol: 'PIDILITIND', name: 'Pidilite Industries Ltd', sector: 'Chemicals' },
-        { symbol: 'PEL', name: 'Piramal Enterprises Ltd', sector: 'Finance' },
-        { symbol: 'PNB', name: 'Punjab National Bank', sector: 'Banking' },
-        { symbol: 'SAIL', name: 'Steel Authority of India Ltd', sector: 'Metals' },
-        { symbol: 'SHREECEM', name: 'Shree Cement Ltd', sector: 'Cement' },
-        { symbol: 'SIEMENS', name: 'Siemens Ltd', sector: 'Industrial' },
-        { symbol: 'SRF', name: 'SRF Ltd', sector: 'Chemicals' },
-        { symbol: 'TATAPOWER', name: 'Tata Power Company Ltd', sector: 'Power' },
-        { symbol: 'TORNTPHARM', name: 'Torrent Pharmaceuticals Ltd', sector: 'Pharma' },
-        { symbol: 'TRENT', name: 'Trent Ltd', sector: 'Retail' },
-        { symbol: 'VEDL', name: 'Vedanta Ltd', sector: 'Mining' },
-        { symbol: 'VOLTAS', name: 'Voltas Ltd', sector: 'Consumer Durables' },
-        { symbol: 'ZOMATO', name: 'Zomato Ltd', sector: 'Consumer' },
-        { symbol: 'PAYTM', name: 'One97 Communications Ltd (Paytm)', sector: 'Fintech' },
-        { symbol: 'NYKAA', name: 'FSN E-Commerce Ventures Ltd (Nykaa)', sector: 'E-Commerce' },
-        { symbol: 'POLICYBZR', name: 'PB Fintech Ltd (PolicyBazaar)', sector: 'Fintech' },
-        { symbol: 'DELHIVERY', name: 'Delhivery Ltd', sector: 'Logistics' },
-        { symbol: 'LTIM', name: 'LTIMindtree Ltd', sector: 'IT' },
-        { symbol: 'PERSISTENT', name: 'Persistent Systems Ltd', sector: 'IT' },
-        { symbol: 'COFORGE', name: 'Coforge Ltd', sector: 'IT' },
-        { symbol: 'MPHASIS', name: 'Mphasis Ltd', sector: 'IT' },
-        // Mid-cap popular
-        { symbol: 'IRFC', name: 'Indian Railway Finance Corporation Ltd', sector: 'Finance' },
-        { symbol: 'IDEA', name: 'Vodafone Idea Ltd', sector: 'Telecom' },
-        { symbol: 'YESBANK', name: 'Yes Bank Ltd', sector: 'Banking' },
-        { symbol: 'SUZLON', name: 'Suzlon Energy Ltd', sector: 'Energy' },
-        { symbol: 'NHPC', name: 'NHPC Ltd', sector: 'Power' },
-        { symbol: 'PFC', name: 'Power Finance Corporation Ltd', sector: 'Finance' },
-        { symbol: 'RECLTD', name: 'REC Ltd', sector: 'Finance' },
-        { symbol: 'HAL', name: 'Hindustan Aeronautics Ltd', sector: 'Defence' },
-        { symbol: 'BEL', name: 'Bharat Electronics Ltd', sector: 'Defence' },
-        { symbol: 'BHEL', name: 'Bharat Heavy Electricals Ltd', sector: 'Industrial' },
-        { symbol: 'LICI', name: 'Life Insurance Corporation of India', sector: 'Insurance' },
-        { symbol: 'ADANIPOWER', name: 'Adani Power Ltd', sector: 'Power' },
-        { symbol: 'TVSMOTOR', name: 'TVS Motor Company Ltd', sector: 'Auto' },
-        { symbol: 'MOTHERSON', name: 'Samvardhana Motherson International Ltd', sector: 'Auto' },
-        { symbol: 'MAXHEALTH', name: 'Max Healthcare Institute Ltd', sector: 'Healthcare' },
-        { symbol: 'MANKIND', name: 'Mankind Pharma Ltd', sector: 'Pharma' },
-        { symbol: 'JSWENERGY', name: 'JSW Energy Ltd', sector: 'Power' },
-        { symbol: 'PAGEIND', name: 'Page Industries Ltd', sector: 'Textiles' },
-        { symbol: 'DIXON', name: 'Dixon Technologies (India) Ltd', sector: 'Electronics' },
-        { symbol: 'ABCAPITAL', name: 'Aditya Birla Capital Ltd', sector: 'Finance' },
-        { symbol: 'FEDERALBNK', name: 'Federal Bank Ltd', sector: 'Banking' },
-        { symbol: 'IDFCFIRSTB', name: 'IDFC First Bank Ltd', sector: 'Banking' },
-        { symbol: 'BANDHANBNK', name: 'Bandhan Bank Ltd', sector: 'Banking' },
-        { symbol: 'AUBANK', name: 'AU Small Finance Bank Ltd', sector: 'Banking' },
-        { symbol: 'CROMPTON', name: 'Crompton Greaves Consumer Electricals Ltd', sector: 'Consumer Durables' },
-        { symbol: 'ASTRAL', name: 'Astral Ltd', sector: 'Industrial' },
-        { symbol: 'DEEPAKNTR', name: 'Deepak Nitrite Ltd', sector: 'Chemicals' },
-        { symbol: 'ATUL', name: 'Atul Ltd', sector: 'Chemicals' },
-        { symbol: 'PIIND', name: 'PI Industries Ltd', sector: 'Chemicals' },
-        { symbol: 'LTTS', name: 'L&T Technology Services Ltd', sector: 'IT' },
-        { symbol: 'MFSL', name: 'Max Financial Services Ltd', sector: 'Finance' },
-        { symbol: 'POLYCAB', name: 'Polycab India Ltd', sector: 'Industrial' },
-        { symbol: 'ABB', name: 'ABB India Ltd', sector: 'Industrial' },
-        { symbol: 'CUMMINSIND', name: 'Cummins India Ltd', sector: 'Industrial' },
-        { symbol: 'HONAUT', name: 'Honeywell Automation India Ltd', sector: 'Industrial' },
-        { symbol: 'CONCOR', name: 'Container Corporation of India Ltd', sector: 'Logistics' },
-        { symbol: 'ESCORT', name: 'Escorts Kubota Ltd', sector: 'Auto' },
-        { symbol: 'INDHOTEL', name: 'Indian Hotels Company Ltd', sector: 'Hotels' },
-    ];
+    try {
+        const response = await fetch('https://archives.nseindia.com/content/equities/EQUITY_L.csv', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+            }
+        });
 
-    const stocksToInsert = nseStocks.map(s => ({
-        symbol: s.symbol,
-        name: s.name,
-        exchange: 'NSE',
-        market: 'IN',
-        sector: s.sector || null,
-        currency: 'INR',
-        is_active: true,
-    }));
+        if (!response.ok) throw new Error(`Failed to fetch NSE CSV: ${response.status}`);
 
-    // Remove duplicates by symbol
-    const uniqueStocks = [...new Map(stocksToInsert.map(s => [s.symbol, s])).values()];
+        const csvText = await response.text();
+        const lines = csvText.split('\n');
+        const stocksToInsert = [];
 
-    // Upsert in batches of 50
-    for (let i = 0; i < uniqueStocks.length; i += 50) {
-        const batch = uniqueStocks.slice(i, i + 50);
-        await supabaseRequest('stocks', 'POST', batch);
-        console.log(`  ✅ Inserted NSE batch ${Math.floor(i / 50) + 1}/${Math.ceil(uniqueStocks.length / 50)} (${batch.length} stocks)`);
+        // Skip header line
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            // Proper CSV splitting ignoring commas inside quotes
+            const parts = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let j = 0; j < line.length; j++) {
+                if (line[j] === '"') {
+                    inQuotes = !inQuotes;
+                } else if (line[j] === ',' && !inQuotes) {
+                    parts.push(current);
+                    current = '';
+                } else {
+                    current += line[j];
+                }
+            }
+            parts.push(current);
+
+            // parts[0] is SYMBOL, parts[1] is NAME OF COMPANY, parts[2] is SERIES
+            const symbol = parts[0]?.trim();
+            const companyName = parts[1]?.trim();
+            const series = parts[2]?.trim();
+
+            // We want mainly EQ (Equity) series, but include others if needed
+            if (symbol && companyName && (series === 'EQ' || series === 'BE' || series === 'SM')) {
+                stocksToInsert.push({
+                    symbol: symbol,
+                    name: companyName,
+                    exchange: 'NSE',
+                    market: 'IN',
+                    sector: null, // the CSV doesn't cleanly define sector, so we leave it open
+                    currency: 'INR',
+                    is_active: true,
+                });
+            }
+        }
+
+        // Remove duplicates just in case
+        const uniqueStocks = [...new Map(stocksToInsert.map(s => [s.symbol, s])).values()];
+        console.log(`  📦 Total unique NSE stocks parsed: ${uniqueStocks.length}`);
+
+        // Upsert in batches of 100
+        for (let i = 0; i < uniqueStocks.length; i += 100) {
+            const batch = uniqueStocks.slice(i, i + 100);
+            await supabaseRequest('stocks', 'POST', batch);
+            console.log(`  ✅ Inserted NSE batch ${Math.floor(i / 100) + 1}/${Math.ceil(uniqueStocks.length / 100)} (${batch.length} stocks)`);
+        }
+
+        console.log(`📊 Total NSE stocks inserted: ${uniqueStocks.length}`);
+        return uniqueStocks.length;
+
+    } catch (error) {
+        console.error('❌ Failed to fetch NSE stocks:', error.message);
+        return 0;
     }
-
-    console.log(`📊 Total NSE stocks inserted: ${uniqueStocks.length}`);
-    return uniqueStocks.length;
 }
 
 // ============ US STOCKS (via Finnhub) ============

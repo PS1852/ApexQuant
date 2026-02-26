@@ -118,6 +118,17 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Global Virtual Money Disclaimer */}
+      <div className="fixed top-4 right-4 z-[100] bg-amber-500/10 border border-amber-500/20 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full flex items-center gap-2 shadow-lg pointer-events-none transition-all">
+        <span className="relative flex h-2 sm:h-2.5 w-2 sm:w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 sm:h-2.5 w-2 sm:w-2.5 bg-amber-500"></span>
+        </span>
+        <span className="text-[10px] sm:text-xs font-bold tracking-widest text-amber-500 uppercase">
+          Virtual Money
+        </span>
+      </div>
+
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-72 flex-col bg-slate-900 border-r border-slate-800 h-screen sticky top-0">
         <NavContent />
