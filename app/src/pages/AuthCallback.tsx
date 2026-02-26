@@ -1,39 +1,43 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
-    const handleAuthCallback = async () => {
-      try {
-        // Get the session from the URL
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth callback error:', error);
-          toast.error('Authentication failed');
-          navigate('/login');
-          return;
-        }
+    // Don't do anything while auth is still loading
+    if (loading) return;
 
-        if (session?.user) {
-          toast.success('Welcome to ApexQuant!');
-          navigate('/dashboard');
-        } else {
-          navigate('/login');
-        }
-      } catch (error) {
-        console.error('Error in auth callback:', error);
-        toast.error('Something went wrong');
-        navigate('/login');
+    // Prevent double navigation
+    if (hasNavigated.current) return;
+    hasNavigated.current = true;
+
+    if (user) {
+      toast.success('Welcome to ApexQuant!');
+      navigate('/dashboard', { replace: true });
+    } else {
+      toast.error('Authentication failed. Please try again.');
+      navigate('/login', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  // Safety timeout — if stuck more than 8 seconds, redirect to login
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!hasNavigated.current) {
+        hasNavigated.current = true;
+        console.warn('Auth callback timeout — redirecting to login');
+        toast.error('Authentication timed out. Please try again.');
+        navigate('/login', { replace: true });
       }
-    };
+    }, 8000);
 
-    handleAuthCallback();
+    return () => clearTimeout(timeout);
   }, [navigate]);
 
   return (

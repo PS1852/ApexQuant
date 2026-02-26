@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types';
 
@@ -19,7 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const initDone = useRef(false);
 
-  const fetchOrCreateProfile = async (currentUser: any) => {
+  const fetchOrCreateProfile = useCallback(async (currentUser: any) => {
     try {
       // First try to fetch existing profile
       const { data, error } = await supabase
@@ -42,9 +42,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           full_name: currentUser.user_metadata?.full_name ||
             currentUser.user_metadata?.name ||
             currentUser.email?.split('@')[0] || 'Trader',
-          avatar_url: currentUser.user_metadata?.avatar_url || null,
+          avatar_url: currentUser.user_metadata?.avatar_url ||
+            currentUser.user_metadata?.picture || null,
           balance: 2000.00,
-          currency: 'INR',
         };
 
         const { data: created, error: createError } = await supabase
@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Still set a local profile so the UI works
           setProfile({
             ...newProfile,
+            currency: 'INR',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           } as Profile);
@@ -66,17 +67,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else if (error) {
         console.error('Error fetching profile:', error);
+        // Set a fallback profile from user metadata so UI doesn't break
+        setProfile({
+          id: currentUser.id,
+          email: currentUser.email || '',
+          full_name: currentUser.user_metadata?.full_name ||
+            currentUser.user_metadata?.name || 'Trader',
+          avatar_url: currentUser.user_metadata?.avatar_url || null,
+          balance: 2000.00,
+          currency: 'INR',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Profile);
       }
     } catch (error) {
       console.error('Error in fetchOrCreateProfile:', error);
     }
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user?.id) {
       await fetchOrCreateProfile(user);
     }
-  };
+  }, [user, fetchOrCreateProfile]);
 
   useEffect(() => {
     let mounted = true;
@@ -87,10 +100,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.warn('Auth loading safety timeout reached, forcing load complete');
         setLoading(false);
       }
-    }, 5000);
+    }, 6000);
 
     const initAuth = async () => {
-      // Prevent double init
+      // Prevent double init in StrictMode
       if (initDone.current) return;
       initDone.current = true;
 
@@ -115,20 +128,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Listen for auth changes (login/logout/token refresh)
+    // Listen for auth changes (login/logout/token refresh/OAuth callback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
 
-        setSession(currentSession);
+        console.log('Auth state change:', event);
 
         if (currentSession?.user) {
+          setSession(currentSession);
           setUser(currentSession.user);
-          // Only fetch profile on sign-in events, not on token refreshes
-          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+
+          // Fetch profile on sign-in events and initial session (OAuth callback)
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
             await fetchOrCreateProfile(currentSession.user);
           }
         } else {
+          setSession(null);
           setUser(null);
           setProfile(null);
         }
@@ -142,7 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchOrCreateProfile]);
 
   const value = {
     user,
