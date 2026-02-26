@@ -188,8 +188,8 @@ export default function StockDetail() {
               >
                 <Star
                   className={`h-5 w-5 ${isInWatchlist(stock?.symbol || '')
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-slate-400'
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-slate-400'
                     }`}
                 />
               </Button>
@@ -210,6 +210,7 @@ export default function StockDetail() {
                 }
                 selectedRange={selectedRange}
                 onRangeChange={setSelectedRange}
+                currency={stock?.currency || (isIndian ? 'INR' : 'USD')}
               />
             </div>
 
@@ -225,14 +226,14 @@ export default function StockDetail() {
                     <div className="p-4 rounded-xl bg-gradient-to-br from-slate-800/80 to-slate-800/40 border border-slate-700/50">
                       <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Current Price</p>
                       <p className="text-2xl font-bold text-white mt-1">
-                        {formatCurrency(stock.current_price || 0)}
+                        {formatCurrency(stock.current_price || 0, stock.currency || (isIndian ? 'INR' : 'USD'))}
                       </p>
                       <p
                         className={`text-sm mt-0.5 ${(stock.change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'
                           }`}
                       >
                         {(stock.change || 0) >= 0 ? '+' : ''}
-                        {formatCurrency(stock.change || 0)} ({formatPercentage(stock.change_percent || 0)})
+                        {formatCurrency(Math.abs(stock.change || 0), stock.currency || (isIndian ? 'INR' : 'USD'))} ({formatPercentage(stock.change_percent || 0)})
                       </p>
                     </div>
                   )}
@@ -243,7 +244,7 @@ export default function StockDetail() {
                       <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Your Holdings</p>
                       <p className="text-lg font-bold text-white mt-1">{holding.quantity} shares</p>
                       <p className="text-sm text-slate-400">
-                        Avg: {formatCurrency(holding.avg_buy_price)}
+                        Avg: {formatCurrency(holding.avg_buy_price, stock?.currency || 'INR')}
                       </p>
                     </div>
                   )}
@@ -252,7 +253,7 @@ export default function StockDetail() {
                   <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
                     <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Balance</p>
                     <p className="text-lg font-bold text-emerald-400 mt-1">
-                      {formatCurrency(profile?.balance || 0)}
+                      {formatCurrency(profile?.balance || 0, 'INR')}
                     </p>
                   </div>
 
@@ -291,7 +292,7 @@ export default function StockDetail() {
                           <div className="p-4 rounded-xl bg-slate-800/50">
                             <p className="text-slate-400">Total Amount</p>
                             <p className="text-2xl font-bold text-white">
-                              {formatCurrency(quantity * (stock?.current_price || 0))}
+                              {formatCurrency(quantity * (stock?.current_price || 0), stock?.currency || 'INR')}
                             </p>
                           </div>
                           <Button
@@ -348,7 +349,7 @@ export default function StockDetail() {
                           <div className="p-4 rounded-xl bg-slate-800/50">
                             <p className="text-slate-400">Total Amount</p>
                             <p className="text-2xl font-bold text-white">
-                              {formatCurrency(quantity * (stock?.current_price || 0))}
+                              {formatCurrency(quantity * (stock?.current_price || 0), stock?.currency || 'INR')}
                             </p>
                           </div>
                           <Button

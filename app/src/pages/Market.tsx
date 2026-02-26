@@ -93,7 +93,7 @@ export default function Market() {
               {stock.current_price ? (
                 <>
                   <p className="font-medium text-white text-sm">
-                    {formatCurrency(stock.current_price)}
+                    {formatCurrency(stock.current_price, stock.currency || (isIndian ? 'INR' : 'USD'))}
                   </p>
                   <p
                     className={`text-xs ${(stock.change_percent || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'

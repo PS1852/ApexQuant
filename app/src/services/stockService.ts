@@ -4,38 +4,46 @@ import type { Stock, ChartData, MarketIndex } from '@/types';
 // ============ API KEYS ============
 const FINNHUB_KEY = 'd6g2o99r01qqnmbqhvsgd6g2o99r01qqnmbqhvt0';
 
-// Use Vite proxy in dev to avoid CORS, direct URLs in production
+// Use Vite proxy in dev to avoid CORS, corsproxy.io in production for Yahoo
 const isDev = import.meta.env.DEV;
-const YAHOO_FINANCE_BASE = isDev
+const YAHOO_BASE = isDev
   ? '/yahoo-api/v8/finance/chart'
-  : 'https://query1.finance.yahoo.com/v8/finance/chart';
-const FINNHUB_BASE = isDev
-  ? '/finnhub-api/api/v1'
-  : 'https://finnhub.io/api/v1';
+  : 'https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart');
+const FINNHUB_BASE = 'https://finnhub.io/api/v1'; // Finnhub supports CORS natively
 
-// ============ CURRENCY CONVERSION ============
-let usdToInrRate = 83.5;
-
-export const fetchUsdToInr = async (): Promise<number> => {
-  try {
-    const response = await fetch(`${YAHOO_FINANCE_BASE}/INR=X?interval=1d&range=1d`);
-    const data = await response.json();
-    if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-      usdToInrRate = data.chart.result[0].meta.regularMarketPrice;
-    }
-    return usdToInrRate;
-  } catch {
-    return usdToInrRate;
+// ============ HELPERS ============
+const finnhubFetch = async (endpoint: string): Promise<any> => {
+  const res = await fetch(`${FINNHUB_BASE}${endpoint}&token=${FINNHUB_KEY}`);
+  if (res.status === 429) {
+    // Rate limited — wait and retry once
+    await new Promise(r => setTimeout(r, 1200));
+    const retry = await fetch(`${FINNHUB_BASE}${endpoint}&token=${FINNHUB_KEY}`);
+    return retry.json();
   }
+  return res.json();
 };
 
-export const convertUsdToInr = (usdAmount: number): number => usdAmount * usdToInrRate;
+const yahooFetch = async (path: string): Promise<any> => {
+  const url = isDev
+    ? `${YAHOO_BASE}/${path}`
+    : `${YAHOO_BASE}/${encodeURIComponent(path)}`;
+  const res = await fetch(url);
+  return res.json();
+};
 
 // ============ FORMATTING ============
 export const formatCurrency = (amount: number, currency: string = 'INR'): string => {
+  if (currency === 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency,
+    currency: 'INR',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
@@ -70,10 +78,7 @@ export const searchStocks = async (query: string): Promise<Stock[]> => {
       },
     });
 
-    if (!res.ok) {
-      console.warn('Search failed:', res.status);
-      return [];
-    }
+    if (!res.ok) return [];
 
     const data = await res.json();
 
@@ -83,43 +88,47 @@ export const searchStocks = async (query: string): Promise<Stock[]> => {
       exchange: s.exchange,
       sector: s.sector,
       country: s.market,
-      currency: s.currency || (s.market === 'IN' ? 'INR' : 'USD'),
+      currency: s.market === 'IN' ? 'INR' : 'USD',
     }));
-  } catch (err) {
-    console.warn('Search error:', err);
+  } catch {
     return [];
   }
 };
 
 // ============ FETCH STOCK QUOTE ============
+// Strategy:
+//   - Indian stocks (.NS/.BO) → Yahoo Finance (has INR prices natively)
+//   - US stocks → Finnhub FIRST (supports CORS, returns USD prices)
+//   - Fallback: Yahoo Finance for US if Finnhub fails
+
 export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => {
+  const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
+
+  if (isIndian) {
+    return fetchYahooQuote(symbol);
+  } else {
+    // US stock — use Finnhub first (native CORS support)
+    const finnhubResult = await fetchFinnhubQuote(symbol);
+    if (finnhubResult) return finnhubResult;
+    // Fallback to Yahoo
+    return fetchYahooQuote(symbol);
+  }
+};
+
+// Yahoo Finance quote — returns price in native currency
+const fetchYahooQuote = async (symbol: string): Promise<Stock | null> => {
   try {
     const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
-    const yahooSymbol = symbol.includes('.') ? symbol :
-      symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
+    const data = await yahooFetch(`${symbol}?interval=1d&range=1d`);
 
-    const response = await fetch(`${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=1d&range=1d`);
-    const data = await response.json();
-
-    if (!data.chart?.result?.[0]) {
-      // Fallback: try Finnhub for US stocks
-      if (!isIndian) {
-        return await fetchFinnhubQuote(symbol);
-      }
-      return null;
-    }
+    if (!data.chart?.result?.[0]) return null;
 
     const meta = data.chart.result[0].meta;
-    let price = meta.regularMarketPrice || 0;
-    let previousClose = meta.previousClose || meta.chartPreviousClose || price;
-
-    if (!isIndian) {
-      price = convertUsdToInr(price);
-      previousClose = convertUsdToInr(previousClose);
-    }
-
+    const price = meta.regularMarketPrice || 0;
+    const previousClose = meta.previousClose || meta.chartPreviousClose || price;
     const change = price - previousClose;
     const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+    const currency = isIndian ? 'INR' : (meta.currency || 'USD');
 
     return {
       symbol,
@@ -128,57 +137,49 @@ export const fetchStockQuote = async (symbol: string): Promise<Stock | null> => 
       current_price: price,
       change,
       change_percent: changePercent,
-      currency: 'INR',
+      currency,
       country: isIndian ? 'IN' : 'US',
     };
-  } catch (error) {
-    console.warn(`Yahoo Finance error for ${symbol}:`, error);
-    // Fallback to Finnhub for US stocks
-    if (!symbol.includes('.NS') && !symbol.includes('.BO')) {
-      return await fetchFinnhubQuote(symbol);
-    }
-    return null;
-  }
-};
-
-// Finnhub fallback for US stocks
-const fetchFinnhubQuote = async (symbol: string): Promise<Stock | null> => {
-  try {
-    const res = await fetch(`${FINNHUB_BASE}/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
-    if (res.status === 429) {
-      await new Promise(r => setTimeout(r, 1000));
-      const retryRes = await fetch(`${FINNHUB_BASE}/quote?symbol=${symbol}&token=${FINNHUB_KEY}`);
-      const d = await retryRes.json();
-      return buildFinnhubStock(symbol, d);
-    }
-    const d = await res.json();
-    return buildFinnhubStock(symbol, d);
   } catch {
     return null;
   }
 };
 
-const buildFinnhubStock = (symbol: string, d: any): Stock | null => {
-  if (!d || d.c === 0) return null;
-  const priceInr = convertUsdToInr(d.c);
-  const prevCloseInr = convertUsdToInr(d.pc);
-  return {
-    symbol,
-    company_name: symbol,
-    exchange: 'US',
-    current_price: priceInr,
-    change: priceInr - prevCloseInr,
-    change_percent: d.pc > 0 ? ((d.c - d.pc) / d.pc) * 100 : 0,
-    currency: 'INR',
-    country: 'US',
-  };
+// Finnhub quote — returns price in USD (native currency, no conversion!)
+const fetchFinnhubQuote = async (symbol: string): Promise<Stock | null> => {
+  try {
+    const [quoteData, profileData] = await Promise.all([
+      finnhubFetch(`/quote?symbol=${symbol}`),
+      finnhubFetch(`/stock/profile2?symbol=${symbol}`).catch(() => null),
+    ]);
+
+    if (!quoteData || quoteData.c === 0 || quoteData.c === undefined) return null;
+
+    const price = quoteData.c;
+    const previousClose = quoteData.pc || price;
+    const change = price - previousClose;
+    const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0;
+
+    return {
+      symbol,
+      company_name: profileData?.name || symbol,
+      exchange: profileData?.exchange || 'US',
+      current_price: price,        // USD — no conversion!
+      change,                       // USD
+      change_percent: changePercent,
+      currency: profileData?.currency || 'USD',
+      country: profileData?.country || 'US',
+    };
+  } catch {
+    return null;
+  }
 };
 
 // ============ FETCH MULTIPLE QUOTES ============
 export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<string, Stock>> => {
   const results: Record<string, Stock> = {};
-  await fetchUsdToInr();
 
+  // Process in batches of 5 to avoid rate limits
   for (let i = 0; i < symbols.length; i += 5) {
     const batch = symbols.slice(i, i + 5);
     const batchResults = await Promise.all(
@@ -191,33 +192,45 @@ export const fetchMultipleQuotes = async (symbols: string[]): Promise<Record<str
       if (quote) results[symbol] = quote;
     });
     if (i + 5 < symbols.length) {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
   }
   return results;
 };
 
 // ============ CHART DATA ============
+// Strategy:
+//   - Indian stocks → Yahoo Finance (INR prices)
+//   - US stocks → Finnhub FIRST (CORS, USD), fallback Yahoo
+
 export const fetchChartData = async (
   symbol: string,
   interval: '1m' | '5m' | '15m' | '30m' | '1h' | '1d' | '1wk' | '1mo' = '1d',
   range: '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y' | '5y' | 'max' = '1mo'
 ): Promise<ChartData[]> => {
+  const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
+
+  if (isIndian) {
+    // Indian stocks: Yahoo first, no fallback needed
+    const yahooData = await fetchYahooChartData(symbol, interval, range);
+    return yahooData;
+  } else {
+    // US stocks: Finnhub first (reliable CORS), Yahoo fallback
+    const finnhubData = await fetchFinnhubCandles(symbol, range);
+    if (finnhubData.length > 0) return finnhubData;
+    return fetchYahooChartData(symbol, interval, range);
+  }
+};
+
+// Yahoo Finance chart data — returns prices in native currency
+const fetchYahooChartData = async (
+  symbol: string,
+  interval: string,
+  range: string
+): Promise<ChartData[]> => {
   try {
-    const isIndian = symbol.includes('.NS') || symbol.includes('.BO');
-    const yahooSymbol = symbol.includes('.') ? symbol :
-      symbol.length <= 5 && /^[A-Z]+$/.test(symbol) ? symbol : `${symbol}.NS`;
-
-    const response = await fetch(`${YAHOO_FINANCE_BASE}/${yahooSymbol}?interval=${interval}&range=${range}`);
-    const data = await response.json();
-
-    if (!data.chart?.result?.[0]) {
-      // Fallback: try Finnhub candles for US stocks
-      if (!isIndian) {
-        return await fetchFinnhubCandles(symbol, range);
-      }
-      return [];
-    }
+    const data = await yahooFetch(`${symbol}?interval=${interval}&range=${range}`);
+    if (!data.chart?.result?.[0]) return [];
 
     const result = data.chart.result[0];
     const timestamps = result.timestamp || [];
@@ -232,13 +245,12 @@ export const fetchChartData = async (
       const volume = quote.volume?.[i];
 
       if (open && high && low && close) {
-        const factor = isIndian ? 1 : usdToInrRate;
         chartData.push({
           time: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-          open: open * factor,
-          high: high * factor,
-          low: low * factor,
-          close: close * factor,
+          open,   // native currency — no conversion
+          high,
+          low,
+          close,
           volume: volume || 0,
         });
       }
@@ -249,7 +261,7 @@ export const fetchChartData = async (
   }
 };
 
-// Finnhub candles fallback
+// Finnhub candles — returns prices in USD (native, no conversion)
 const fetchFinnhubCandles = async (symbol: string, range: string): Promise<ChartData[]> => {
   try {
     const rangeMap: Record<string, { resolution: string; days: number }> = {
@@ -267,19 +279,18 @@ const fetchFinnhubCandles = async (symbol: string, range: string): Promise<Chart
     const to = Math.floor(Date.now() / 1000);
     const from = to - config.days * 86400;
 
-    const res = await fetch(
-      `${FINNHUB_BASE}/stock/candle?symbol=${symbol}&resolution=${config.resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
+    const d = await finnhubFetch(
+      `/stock/candle?symbol=${symbol}&resolution=${config.resolution}&from=${from}&to=${to}`
     );
-    const d = await res.json();
 
     if (d.s !== 'ok' || !d.t) return [];
 
     return d.t.map((t: number, i: number) => ({
       time: new Date(t * 1000).toISOString().split('T')[0],
-      open: convertUsdToInr(d.o[i]),
-      high: convertUsdToInr(d.h[i]),
-      low: convertUsdToInr(d.l[i]),
-      close: convertUsdToInr(d.c[i]),
+      open: d.o[i],      // USD — no conversion!
+      high: d.h[i],
+      low: d.l[i],
+      close: d.c[i],
       volume: d.v[i] || 0,
     }));
   } catch {
@@ -300,9 +311,7 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
 
   for (const index of indices) {
     try {
-      const response = await fetch(`${YAHOO_FINANCE_BASE}/${index.symbol}?interval=1d&range=1d`);
-      const data = await response.json();
-
+      const data = await yahooFetch(`${index.symbol}?interval=1d&range=1d`);
       if (data.chart?.result?.[0]) {
         const meta = data.chart.result[0].meta;
         const price = meta.regularMarketPrice || 0;
@@ -319,15 +328,7 @@ export const fetchMarketIndices = async (): Promise<MarketIndex[]> => {
         });
       }
     } catch {
-      const baseValue = Math.random() * 20000 + 5000;
-      const change = (Math.random() - 0.5) * baseValue * 0.02;
-      results.push({
-        symbol: index.symbol,
-        name: index.name,
-        value: baseValue,
-        change,
-        change_percent: (change / baseValue) * 100,
-      });
+      // Skip failed indices
     }
   }
   return results;

@@ -22,6 +22,7 @@ interface StockChartProps {
     prevClose?: number;
     selectedRange: TimeRange;
     onRangeChange: (range: TimeRange) => void;
+    currency?: string;
 }
 
 export default function StockChart({
@@ -31,6 +32,7 @@ export default function StockChart({
     prevClose,
     selectedRange,
     onRangeChange,
+    currency = 'INR',
 }: StockChartProps) {
     const svgRef = useRef<SVGSVGElement>(null);
     const [hoverIndex, setHoverIndex] = useState<number | null>(null);
@@ -193,7 +195,7 @@ export default function StockChart({
             <div className="mb-4">
                 {displayPrice !== undefined && (
                     <p className="text-3xl font-bold text-white tracking-tight">
-                        {formatCurrency(displayPrice)}
+                        {formatCurrency(displayPrice, currency)}
                     </p>
                 )}
                 <div className="flex items-center gap-2 mt-1">
@@ -203,7 +205,7 @@ export default function StockChart({
                             className="text-sm font-medium"
                         >
                             {displayChange >= 0 ? '+' : ''}
-                            {formatCurrency(displayChange)} ({formatPercentage(displayChangePct)})
+                            {formatCurrency(Math.abs(displayChange), currency)} ({formatPercentage(displayChangePct)})
                         </span>
                     )}
                     <span className="text-slate-500 text-sm">
@@ -317,12 +319,12 @@ export default function StockChart({
                             transform: 'translateX(-50%)',
                         }}
                     >
-                        <div className="text-white font-medium">{formatCurrency(hoverCandle.close)}</div>
+                        <div className="text-white font-medium">{formatCurrency(hoverCandle.close, currency)}</div>
                         <div className="text-slate-400 mt-0.5">
-                            O: {formatCurrency(hoverCandle.open)} H: {formatCurrency(hoverCandle.high)}
+                            O: {formatCurrency(hoverCandle.open, currency)} H: {formatCurrency(hoverCandle.high, currency)}
                         </div>
                         <div className="text-slate-400">
-                            L: {formatCurrency(hoverCandle.low)} V: {hoverCandle.volume?.toLocaleString()}
+                            L: {formatCurrency(hoverCandle.low, currency)} V: {hoverCandle.volume?.toLocaleString()}
                         </div>
                         <div className="text-slate-500 mt-0.5">{hoverCandle.time}</div>
                     </div>
