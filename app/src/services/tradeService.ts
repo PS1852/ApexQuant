@@ -12,8 +12,8 @@ interface TradeResult {
 export const executeBuy = async (
   userId: string,
   symbol: string,
-  companyName: string,
-  exchange: string,
+  _companyName: string,
+  _exchange: string,
   quantity: number,
   price: number
 ): Promise<TradeResult> => {
@@ -23,7 +23,7 @@ export const executeBuy = async (
       return { success: false, message: 'User not authenticated', error: 'AUTH_REQUIRED' };
     }
 
-    if (!symbol || !companyName || quantity <= 0 || price <= 0) {
+    if (!symbol || !_companyName || quantity <= 0 || price <= 0) {
       return { success: false, message: 'Invalid trade parameters', error: 'INVALID_PARAMS' };
     }
 
@@ -42,8 +42,8 @@ export const executeBuy = async (
 
     // Check if user has sufficient balance
     if (profile.balance < totalAmount) {
-      return { 
-        success: false, 
+      return {
+        success: false,
         message: `Insufficient balance. Required: ₹${totalAmount.toFixed(2)}, Available: ₹${profile.balance.toFixed(2)}`,
         error: 'INSUFFICIENT_BALANCE'
       };
@@ -55,13 +55,10 @@ export const executeBuy = async (
       .insert([{
         user_id: userId,
         symbol: symbol,
-        company_name: companyName,
-        exchange: exchange,
-        transaction_type: 'BUY',
-        quantity: quantity,
+        type: 'BUY',
+        shares: quantity,
         price: price,
-        total_amount: totalAmount,
-        currency: 'INR',
+        amount: totalAmount,
       }])
       .select()
       .single();
@@ -94,21 +91,16 @@ export const executeBuy = async (
 
     if (existingPortfolio) {
       // Update existing portfolio entry
-      const newQuantity = existingPortfolio.quantity + quantity;
-      const newTotalInvestment = existingPortfolio.total_investment + totalAmount;
+      const newQuantity = (existingPortfolio.shares || 0) + quantity;
+      const oldAvg = existingPortfolio.average_price || 0;
+      const newTotalInvestment = (oldAvg * (existingPortfolio.shares || 0)) + totalAmount;
       const newAvgPrice = newTotalInvestment / newQuantity;
 
       const { error: portfolioError } = await supabase
         .from('portfolio')
         .update({
-          quantity: newQuantity,
-          avg_buy_price: newAvgPrice,
-          total_investment: newTotalInvestment,
-          current_price: price,
-          current_value: newQuantity * price,
-          unrealized_pnl: (newQuantity * price) - newTotalInvestment,
-          unrealized_pnl_percent: ((newQuantity * price) - newTotalInvestment) / newTotalInvestment * 100,
-          last_updated: new Date().toISOString(),
+          shares: newQuantity,
+          average_price: newAvgPrice,
         })
         .eq('id', existingPortfolio.id);
 
@@ -122,15 +114,8 @@ export const executeBuy = async (
         .insert([{
           user_id: userId,
           symbol: symbol,
-          company_name: companyName,
-          exchange: exchange,
-          quantity: quantity,
-          avg_buy_price: price,
-          total_investment: totalAmount,
-          current_price: price,
-          current_value: totalAmount,
-          unrealized_pnl: 0,
-          unrealized_pnl_percent: 0,
+          shares: quantity,
+          average_price: price,
         }]);
 
       if (portfolioError) {
@@ -154,8 +139,8 @@ export const executeBuy = async (
 export const executeSell = async (
   userId: string,
   symbol: string,
-  companyName: string,
-  exchange: string,
+  _companyName: string,
+  _exchange: string,
   quantity: number,
   price: number
 ): Promise<TradeResult> => {
@@ -165,7 +150,7 @@ export const executeSell = async (
       return { success: false, message: 'User not authenticated', error: 'AUTH_REQUIRED' };
     }
 
-    if (!symbol || !companyName || quantity <= 0 || price <= 0) {
+    if (!symbol || !_companyName || quantity <= 0 || price <= 0) {
       return { success: false, message: 'Invalid trade parameters', error: 'INVALID_PARAMS' };
     }
 
@@ -182,16 +167,18 @@ export const executeSell = async (
     }
 
     // Check if user has sufficient quantity
-    if (portfolio.quantity < quantity) {
-      return { 
-        success: false, 
-        message: `Insufficient shares. You own ${portfolio.quantity} shares, trying to sell ${quantity}`,
+    const currentQty = portfolio.shares || 0;
+    if (currentQty < quantity) {
+      return {
+        success: false,
+        message: `Insufficient shares. You own ${currentQty} shares, trying to sell ${quantity}`,
         error: 'INSUFFICIENT_SHARES'
       };
     }
 
     const totalAmount = quantity * price;
-    const realizedPnl = (price - portfolio.avg_buy_price) * quantity;
+    const oldAvg = portfolio.average_price || 0;
+    const realizedPnl = (price - oldAvg) * quantity;
 
     // Create transaction record
     const { data: transaction, error: transactionError } = await supabase
@@ -199,14 +186,10 @@ export const executeSell = async (
       .insert([{
         user_id: userId,
         symbol: symbol,
-        company_name: companyName,
-        exchange: exchange,
-        transaction_type: 'SELL',
-        quantity: quantity,
+        type: 'SELL',
+        shares: quantity,
         price: price,
-        total_amount: totalAmount,
-        realized_pnl: realizedPnl,
-        currency: 'INR',
+        amount: totalAmount,
       }])
       .select()
       .single();
@@ -241,21 +224,13 @@ export const executeSell = async (
     }
 
     // Update portfolio
-    const newQuantity = portfolio.quantity - quantity;
+    const newQuantity = currentQty - quantity;
 
     if (newQuantity > 0) {
-      const newTotalInvestment = portfolio.avg_buy_price * newQuantity;
-      
       const { error: updateError } = await supabase
         .from('portfolio')
         .update({
-          quantity: newQuantity,
-          total_investment: newTotalInvestment,
-          current_price: price,
-          current_value: newQuantity * price,
-          unrealized_pnl: (newQuantity * price) - newTotalInvestment,
-          unrealized_pnl_percent: ((newQuantity * price) - newTotalInvestment) / newTotalInvestment * 100,
-          last_updated: new Date().toISOString(),
+          shares: newQuantity,
         })
         .eq('id', portfolio.id);
 

@@ -4,24 +4,57 @@
 
 export function isNSEOpen(): boolean {
     const now = new Date();
-    const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    const h = ist.getHours();
-    const m = ist.getMinutes();
-    const day = ist.getDay();
-    if (day === 0 || day === 6) return false; // Weekend
+
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Kolkata',
+        hour: 'numeric',
+        minute: 'numeric',
+        weekday: 'short',
+        hour12: false
+    });
+
+    const parts = formatter.formatToParts(now);
+    let h = 0, m = 0, dayString = '';
+
+    for (const part of parts) {
+        if (part.type === 'hour') h = parseInt(part.value, 10);
+        if (part.type === 'minute') m = parseInt(part.value, 10);
+        if (part.type === 'weekday') dayString = part.value;
+    }
+
+    if (dayString === 'Sun' || dayString === 'Sat') return false; // Weekend
+
     const mins = h * 60 + m;
-    return mins >= 555 && mins <= 930; // 9:15 AM to 3:30 PM IST
+    // 9:15 AM to 3:30 PM IST is 555 mins to 930 mins
+    return mins >= 555 && mins <= 930;
 }
 
 export function isNYSEOpen(): boolean {
     const now = new Date();
-    const est = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-    const h = est.getHours();
-    const m = est.getMinutes();
-    const day = est.getDay();
-    if (day === 0 || day === 6) return false; // Weekend
+
+    // Parse the actual New York time
+    const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/New_York',
+        hour: 'numeric',
+        minute: 'numeric',
+        weekday: 'short',
+        hour12: false
+    });
+
+    const parts = formatter.formatToParts(now);
+    let h = 0, m = 0, dayString = '';
+
+    for (const part of parts) {
+        if (part.type === 'hour') h = parseInt(part.value, 10);
+        if (part.type === 'minute') m = parseInt(part.value, 10);
+        if (part.type === 'weekday') dayString = part.value;
+    }
+
+    if (dayString === 'Sun' || dayString === 'Sat') return false; // Weekend
+
     const mins = h * 60 + m;
-    return mins >= 570 && mins <= 960; // 9:30 AM to 4:00 PM EST
+    // 9:30 AM to 4:00 PM EST is 570 mins to 960 mins
+    return mins >= 570 && mins <= 960;
 }
 
 export function isMarketOpen(market: 'IN' | 'US'): boolean {

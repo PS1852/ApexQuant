@@ -39,7 +39,7 @@ export function useWatchlist() {
     }
   }, [user?.id]);
 
-  const addToWatchlist = async (symbol: string, companyName: string, exchange: string) => {
+  const addToWatchlist = async (symbol: string) => {
     if (!user?.id) {
       throw new Error('User not authenticated');
     }
@@ -50,8 +50,6 @@ export function useWatchlist() {
         .insert([{
           user_id: user.id,
           symbol,
-          company_name: companyName,
-          exchange,
         }])
         .select()
         .single();

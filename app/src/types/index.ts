@@ -38,31 +38,24 @@ export interface PortfolioItem {
   id: string;
   user_id: string;
   symbol: string;
-  company_name: string;
-  exchange: string;
-  quantity: number;
-  avg_buy_price: number;
-  total_investment: number;
-  current_price: number | null;
-  current_value: number | null;
-  unrealized_pnl: number;
-  unrealized_pnl_percent: number;
-  last_updated: string;
+  shares: number;
+  average_price: number;
   created_at: string;
+  // Synthetic frontend-only values
+  current_price?: number;
+  current_value?: number;
+  unrealized_pnl?: number;
+  unrealized_pnl_percent?: number;
 }
 
 export interface Transaction {
   id: string;
   user_id: string;
   symbol: string;
-  company_name: string;
-  exchange: string;
-  transaction_type: 'BUY' | 'SELL';
-  quantity: number;
+  type: string;
+  shares: number;
   price: number;
-  total_amount: number;
-  realized_pnl: number | null;
-  currency: string;
+  amount: number;
   created_at: string;
 }
 
@@ -70,9 +63,10 @@ export interface WatchlistItem {
   id: string;
   user_id: string;
   symbol: string;
-  company_name: string;
-  exchange: string;
   added_at: string;
+  // Synthetic frontend fields
+  company_name?: string;
+  exchange?: string;
   current_price?: number;
   change?: number;
   change_percent?: number;

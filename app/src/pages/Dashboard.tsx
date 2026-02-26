@@ -9,11 +9,11 @@ import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Wallet, 
-  PieChart, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+  PieChart,
   Activity,
   ArrowRight,
   Star
@@ -25,7 +25,7 @@ export default function Dashboard() {
   const { portfolio, stats: portfolioStats, loading: portfolioLoading } = usePortfolio();
   const { watchlist, loading: watchlistLoading } = useWatchlist();
   const { transactions, loading: transactionsLoading } = useTransactions(5);
-  
+
   const [watchlistQuotes, setWatchlistQuotes] = useState<Record<string, Stock>>({});
 
   useEffect(() => {
@@ -44,14 +44,14 @@ export default function Dashboard() {
 
   const totalPortfolioValue = portfolioStats.currentValue + (profile?.balance || 0);
   const totalPnl = portfolioStats.totalPnl;
-  const totalPnlPercent = portfolioStats.totalInvestment > 0 
-    ? (totalPnl / portfolioStats.totalInvestment) * 100 
+  const totalPnlPercent = portfolioStats.totalInvestment > 0
+    ? (totalPnl / portfolioStats.totalInvestment) * 100
     : 0;
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
       <Sidebar />
-      
+
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
@@ -172,8 +172,8 @@ export default function Dashboard() {
                   ) : (
                     <div className="space-y-3">
                       {portfolio.slice(0, 5).map((item) => (
-                        <div 
-                          key={item.id} 
+                        <div
+                          key={item.id}
                           className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors"
                         >
                           <div className="flex items-center gap-4">
@@ -184,12 +184,12 @@ export default function Dashboard() {
                             </div>
                             <div>
                               <p className="font-medium text-white">{item.symbol}</p>
-                              <p className="text-sm text-slate-400">{item.quantity} shares</p>
+                              <p className="text-sm text-slate-400">{item.shares} shares</p>
                             </div>
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-white">
-                              {formatCurrency(item.current_value || item.total_investment)}
+                              {formatCurrency(item.current_value || (item.shares * item.average_price))}
                             </p>
                             <p className={`text-sm ${(item.unrealized_pnl || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                               {(item.unrealized_pnl || 0) >= 0 ? '+' : ''}
@@ -224,34 +224,32 @@ export default function Dashboard() {
                   ) : (
                     <div className="space-y-3">
                       {transactions.map((transaction) => (
-                        <div 
-                          key={transaction.id} 
+                        <div
+                          key={transaction.id}
                           className="flex items-center justify-between p-4 rounded-xl bg-slate-800/50"
                         >
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                              transaction.transaction_type === 'BUY' 
-                                ? 'bg-emerald-500/10' 
-                                : 'bg-red-500/10'
-                            }`}>
-                              <span className={`text-sm font-bold ${
-                                transaction.transaction_type === 'BUY' 
-                                  ? 'text-emerald-400' 
-                                  : 'text-red-400'
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${transaction.type === 'BUY'
+                              ? 'bg-emerald-500/10'
+                              : 'bg-red-500/10'
                               }`}>
-                                {transaction.transaction_type === 'BUY' ? 'B' : 'S'}
+                              <span className={`text-sm font-bold ${transaction.type === 'BUY'
+                                ? 'text-emerald-400'
+                                : 'text-red-400'
+                                }`}>
+                                {transaction.type === 'BUY' ? 'B' : 'S'}
                               </span>
                             </div>
                             <div>
                               <p className="font-medium text-white">{transaction.symbol}</p>
                               <p className="text-sm text-slate-400">
-                                {transaction.quantity} shares @ {formatCurrency(transaction.price)}
+                                {transaction.shares} shares @ {formatCurrency(transaction.price)}
                               </p>
                             </div>
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-white">
-                              {formatCurrency(transaction.total_amount)}
+                              {formatCurrency(transaction.amount)}
                             </p>
                             <p className="text-sm text-slate-500">
                               {new Date(transaction.created_at).toLocaleDateString()}
@@ -297,8 +295,8 @@ export default function Dashboard() {
                       {watchlist.slice(0, 5).map((item) => {
                         const quote = watchlistQuotes[item.symbol];
                         return (
-                          <Link 
-                            key={item.id} 
+                          <Link
+                            key={item.id}
                             to={`/stock/${item.symbol}`}
                             className="flex items-center justify-between p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 transition-colors"
                           >

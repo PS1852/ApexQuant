@@ -4,9 +4,9 @@ import Sidebar from '@/components/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
-import { 
-  History, 
-  TrendingUp, 
+import {
+  History,
+  TrendingUp,
   TrendingDown,
   ArrowRight
 } from 'lucide-react';
@@ -17,14 +17,14 @@ export default function Transactions() {
   const { transactions, loading, stats } = useTransactions(100);
   const [filter, setFilter] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
 
-  const filteredTransactions = transactions.filter(t => 
-    filter === 'ALL' || t.transaction_type === filter
+  const filteredTransactions = transactions.filter(t =>
+    filter === 'ALL' || t.type === filter
   );
 
   return (
     <div className="min-h-screen bg-slate-950 flex">
       <Sidebar />
-      
+
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
@@ -172,33 +172,25 @@ export default function Transactions() {
                             </span>
                           </td>
                           <td className="py-4 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              transaction.transaction_type === 'BUY' 
-                                ? 'bg-emerald-500/10 text-emerald-400' 
-                                : 'bg-red-500/10 text-red-400'
-                            }`}>
-                              {transaction.transaction_type}
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${transaction.type === 'BUY'
+                              ? 'bg-emerald-500/10 text-emerald-400'
+                              : 'bg-red-500/10 text-red-400'
+                              }`}>
+                              {transaction.type}
                             </span>
                           </td>
                           <td className="py-4 px-4">
                             <p className="font-medium text-white">{transaction.symbol}</p>
-                            <p className="text-sm text-slate-400">{transaction.exchange}</p>
                           </td>
-                          <td className="text-right py-4 px-4 text-white">{transaction.quantity}</td>
+                          <td className="text-right py-4 px-4 text-white">{transaction.shares}</td>
                           <td className="text-right py-4 px-4 text-slate-400">
                             {formatCurrency(transaction.price)}
                           </td>
                           <td className="text-right py-4 px-4 text-white font-medium">
-                            {formatCurrency(transaction.total_amount)}
+                            {formatCurrency(transaction.amount)}
                           </td>
                           <td className="text-right py-4 px-4">
-                            {transaction.transaction_type === 'SELL' && transaction.realized_pnl !== null ? (
-                              <span className={transaction.realized_pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>
-                                {transaction.realized_pnl >= 0 ? '+' : ''}{formatCurrency(transaction.realized_pnl)}
-                              </span>
-                            ) : (
-                              <span className="text-slate-500">-</span>
-                            )}
+                            <span className="text-slate-500">-</span>
                           </td>
                         </tr>
                       ))}

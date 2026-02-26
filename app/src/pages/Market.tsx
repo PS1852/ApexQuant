@@ -52,7 +52,7 @@ export default function Market() {
 
   const handleAddToWatchlist = async (stock: Stock) => {
     try {
-      await addToWatchlist(stock.symbol, stock.company_name, stock.exchange);
+      await addToWatchlist(stock.symbol);
       toast.success(`${stock.symbol} added to watchlist`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to add to watchlist');

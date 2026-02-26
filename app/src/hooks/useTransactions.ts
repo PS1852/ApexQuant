@@ -71,16 +71,14 @@ export function useTransactions(limit: number = 100) {
 
   const stats = {
     totalBuyValue: transactions
-      .filter(t => t.transaction_type === 'BUY')
-      .reduce((sum, t) => sum + t.total_amount, 0),
+      .filter(t => t.type === 'BUY')
+      .reduce((sum, t) => sum + t.amount, 0),
     totalSellValue: transactions
-      .filter(t => t.transaction_type === 'SELL')
-      .reduce((sum, t) => sum + t.total_amount, 0),
-    totalRealizedPnl: transactions
-      .filter(t => t.transaction_type === 'SELL')
-      .reduce((sum, t) => sum + (t.realized_pnl || 0), 0),
-    buyCount: transactions.filter(t => t.transaction_type === 'BUY').length,
-    sellCount: transactions.filter(t => t.transaction_type === 'SELL').length,
+      .filter(t => t.type === 'SELL')
+      .reduce((sum, t) => sum + t.amount, 0),
+    totalRealizedPnl: 0, // Not stored in DB
+    buyCount: transactions.filter(t => t.type === 'BUY').length,
+    sellCount: transactions.filter(t => t.type === 'SELL').length,
   };
 
   return {

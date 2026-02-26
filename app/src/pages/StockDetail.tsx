@@ -40,7 +40,7 @@ export default function StockDetail() {
   const market: 'IN' | 'US' = isIndian ? 'IN' : 'US';
 
   const { data: stock, loading: priceLoading } = useStockPrice(symbol, market);
-  const [selectedRange, setSelectedRange] = useState<TimeRange>('1mo');
+  const [selectedRange, setSelectedRange] = useState<TimeRange>('1d');
   const { candles, loading: chartLoading } = useHistoricalData(symbol, selectedRange);
 
   const [quantity, setQuantity] = useState(1);
@@ -53,7 +53,7 @@ export default function StockDetail() {
     profile?.balance && stock?.current_price
       ? Math.floor(profile.balance / stock.current_price)
       : 0;
-  const maxSellQuantity = holding?.quantity || 0;
+  const maxSellQuantity = holding?.shares || 0;
 
   const marketOpen = isMarketOpen(market);
 
@@ -101,7 +101,7 @@ export default function StockDetail() {
       if (isInWatchlist(stock.symbol)) {
         toast.success('Already in watchlist');
       } else {
-        await addToWatchlist(stock.symbol, stock.company_name, stock.exchange);
+        await addToWatchlist(stock.symbol);
         toast.success('Added to watchlist');
       }
     } catch (error: any) {
@@ -242,9 +242,9 @@ export default function StockDetail() {
                   {holding && (
                     <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
                       <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Your Holdings</p>
-                      <p className="text-lg font-bold text-white mt-1">{holding.quantity} shares</p>
+                      <p className="text-lg font-bold text-white mt-1">{holding.shares} shares</p>
                       <p className="text-sm text-slate-400">
-                        Avg: {formatCurrency(holding.avg_buy_price, stock?.currency || 'INR')}
+                        Avg: {formatCurrency(holding.average_price, stock?.currency || 'INR')}
                       </p>
                     </div>
                   )}
@@ -267,9 +267,12 @@ export default function StockDetail() {
                       }}
                     >
                       <DialogTrigger asChild>
-                        <Button className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                        <Button
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          disabled={!marketOpen}
+                        >
                           <TrendingUp className="h-4 w-4 mr-2" />
-                          Buy
+                          {marketOpen ? 'Buy' : 'Market Closed'}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="bg-slate-900 border-slate-800">
@@ -297,7 +300,7 @@ export default function StockDetail() {
                           </div>
                           <Button
                             onClick={handleTrade}
-                            disabled={trading || quantity <= 0 || quantity > maxBuyQuantity}
+                            disabled={trading || quantity <= 0 || quantity > maxBuyQuantity || !marketOpen}
                             className="w-full bg-emerald-600 hover:bg-emerald-700"
                           >
                             {trading ? (
@@ -323,10 +326,10 @@ export default function StockDetail() {
                       <DialogTrigger asChild>
                         <Button
                           variant="destructive"
-                          disabled={!holding || holding.quantity === 0}
+                          disabled={!holding || holding.shares === 0 || !marketOpen}
                         >
                           <TrendingDown className="h-4 w-4 mr-2" />
-                          Sell
+                          {marketOpen ? 'Sell' : 'Market Closed'}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="bg-slate-900 border-slate-800">
@@ -354,7 +357,7 @@ export default function StockDetail() {
                           </div>
                           <Button
                             onClick={handleTrade}
-                            disabled={trading || quantity <= 0 || quantity > maxSellQuantity}
+                            disabled={trading || quantity <= 0 || quantity > maxSellQuantity || !marketOpen}
                             variant="destructive"
                             className="w-full"
                           >

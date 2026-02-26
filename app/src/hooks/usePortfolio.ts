@@ -43,11 +43,12 @@ export function usePortfolio() {
     if (!portfolio.length) return;
 
     const updatedPortfolio = portfolio.map(item => {
-      const currentPrice = prices[item.symbol] || item.current_price || item.avg_buy_price;
-      const currentValue = currentPrice * item.quantity;
-      const unrealizedPnl = currentValue - item.total_investment;
-      const unrealizedPnlPercent = item.total_investment > 0 
-        ? (unrealizedPnl / item.total_investment) * 100 
+      const currentPrice = prices[item.symbol] || item.current_price || item.average_price;
+      const totalInvestment = item.shares * item.average_price;
+      const currentValue = currentPrice * item.shares;
+      const unrealizedPnl = currentValue - totalInvestment;
+      const unrealizedPnlPercent = totalInvestment > 0
+        ? (unrealizedPnl / totalInvestment) * 100
         : 0;
 
       return {
@@ -92,16 +93,16 @@ export function usePortfolio() {
   }, [user?.id, fetchPortfolio]);
 
   const stats = {
-    totalInvestment: portfolio.reduce((sum, item) => sum + item.total_investment, 0),
-    currentValue: portfolio.reduce((sum, item) => sum + (item.current_value || item.total_investment), 0),
+    totalInvestment: portfolio.reduce((sum, item) => sum + (item.shares * item.average_price), 0),
+    currentValue: portfolio.reduce((sum, item) => sum + (item.current_value || (item.shares * item.average_price)), 0),
     totalPnl: portfolio.reduce((sum, item) => sum + (item.unrealized_pnl || 0), 0),
     totalHoldings: portfolio.length,
-    totalQuantity: portfolio.reduce((sum, item) => sum + item.quantity, 0),
+    totalQuantity: portfolio.reduce((sum, item) => sum + item.shares, 0),
   };
 
   stats.totalPnl = stats.currentValue - stats.totalInvestment;
-  const totalPnlPercent = stats.totalInvestment > 0 
-    ? (stats.totalPnl / stats.totalInvestment) * 100 
+  const totalPnlPercent = stats.totalInvestment > 0
+    ? (stats.totalPnl / stats.totalInvestment) * 100
     : 0;
 
   return {
