@@ -11,6 +11,9 @@ import LegalPage from '@/pages/LegalPage';
 import AboutPage from '@/pages/AboutPage';
 import ContactPage from '@/pages/ContactPage';
 import BlogPage from '@/pages/BlogPage';
+import BlogPostPage from '@/pages/BlogPostPage';
+import FeaturesPage from '@/pages/FeaturesPage';
+import HowItWorksPage from '@/pages/HowItWorksPage';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Market from '@/pages/Market';
@@ -37,7 +40,10 @@ function App() {
           <Route path="/legal/:document" element={<LegalPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
           <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={

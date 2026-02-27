@@ -6,37 +6,41 @@ import { Badge } from '@/components/ui/badge';
 export default function BlogPage() {
     const featuredPost = {
         title: "The Psychology of Virtual Trading vs Real Capital",
+        slug: "psychology-of-virtual-trading",
         excerpt: "Discover how risk-free simulation trading patterns differ from real-world execution, and how to bridge the psychological gap to become a more profitable trader.",
         category: "Trading Psychology",
         readTime: "8 min read",
         author: "Elena Rostov",
-        date: "October 12, 2024",
+        date: "February 12, 2025",
         image: `${import.meta.env.BASE_URL}about_team.png`
     };
 
     const recentPosts = [
         {
             title: "Algorithmic Trading Basics for Retail Investors",
+            slug: "algo-trading-basics",
             excerpt: "An introduction to using simple technical parameters to build your first automated trading strategy.",
             category: "Algo Trading",
             readTime: "12 min read",
-            date: "October 8, 2024",
+            date: "February 8, 2025",
             image: "bg-blue-500/10 border-blue-500/20"
         },
         {
             title: "Understanding Market Microstructure",
+            slug: "market-microstructure",
             excerpt: "Delve into the order book, bid-ask spreads, and how High Frequency Trading firms execute their strategies.",
             category: "Market Tech",
             readTime: "10 min read",
-            date: "October 5, 2024",
+            date: "February 5, 2025",
             image: "bg-purple-500/10 border-purple-500/20"
         },
         {
             title: "Navigating Volatility: A Beginner's Guide",
+            slug: "navigating-volatility",
             excerpt: "When the VIX spikes, how should you adjust your portfolio? Learn how to hedge during uncertain macroeconomic times.",
             category: "Strategy",
             readTime: "7 min read",
-            date: "October 1, 2024",
+            date: "February 1, 2025",
             image: "bg-cyan-500/10 border-cyan-500/20"
         }
     ];
@@ -97,7 +101,7 @@ export default function BlogPage() {
                     <TrendingUp className="h-6 w-6 text-blue-400" /> Featured Post
                 </h2>
 
-                <div className="group cursor-pointer relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-blue-500/50 transition-colors duration-500">
+                <Link to={`/blog/${featuredPost.slug}`} className="block group cursor-pointer relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-blue-500/50 transition-colors duration-500">
                     <div className="grid lg:grid-cols-2 gap-0 relative z-10">
                         <div className="h-[300px] lg:h-auto w-full overflow-hidden">
                             <img
@@ -139,7 +143,7 @@ export default function BlogPage() {
                             </div>
                         </div>
                     </div>
-                </div>
+                </Link>
             </section>
 
             {/* Recent Posts Grid */}
@@ -147,7 +151,7 @@ export default function BlogPage() {
                 <h2 className="text-2xl font-bold text-white mb-8">Recent Articles</h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {recentPosts.map((post, i) => (
-                        <div key={i} className="group cursor-pointer bg-slate-900/50 border border-slate-800 hover:border-slate-600 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-900/50 flex flex-col">
+                        <Link key={i} to={`/blog/${post.slug}`} className="group cursor-pointer bg-slate-900/50 border border-slate-800 hover:border-slate-600 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-900/50 flex flex-col">
                             <div className={`h-48 w-full ${post.image} border-b flex items-center justify-center relative overflow-hidden`}>
                                 <div className="absolute inset-0 bg-gradient-to-br from-transparent to-slate-950/80 pointer-events-none z-10" />
                                 <BookOpen className="w-16 h-16 text-slate-700/50 group-hover:scale-110 transition-transform duration-500" />
@@ -170,7 +174,7 @@ export default function BlogPage() {
                                     <span className="text-sm text-blue-400 font-medium group-hover:underline">Read Article</span>
                                 </div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             </section>

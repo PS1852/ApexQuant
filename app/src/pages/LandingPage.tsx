@@ -84,9 +84,13 @@ export default function LandingPage() {
             </Link>
 
             <div className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-slate-400 hover:text-white transition-colors">Features</a>
-              <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a>
-              <Link to="/about" className="text-slate-400 hover:text-white transition-colors">About</Link>
+              <Link to="/features" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                Features
+              </Link>
+              <Link to="/how-it-works" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+                How It Works
+              </Link>
+              <Link to="/about" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">About</Link>
             </div>
 
             <div className="flex items-center gap-3">
@@ -402,8 +406,8 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-semibold mb-4">Product</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
+                <li><Link to="/features" className="hover:text-white transition-colors">Features</Link></li>
+                <li><Link to="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
               </ul>
             </div>
 
@@ -426,8 +430,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-8 border-t border-slate-800 text-center text-sm text-slate-500">
-            <p>© 2024 ApexQuant. All rights reserved. Virtual trading platform for educational purposes only.</p>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-slate-500">
+              © 2025 ApexQuant. All rights reserved. Not a real trading platform.
+            </p>
           </div>
         </div>
       </footer>
