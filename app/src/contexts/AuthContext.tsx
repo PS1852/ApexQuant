@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string, userMeta: any): Promise<Profile | null> => {
+  const fetchProfile = useCallback(async (userId: string, userMeta: any) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -28,12 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (data) {
         setProfile(data as Profile);
-        return data as Profile;
+        return;
       }
 
       if (error) {
         console.error('[Auth] Profile fetch err:', error.message);
-        return null;
+        return;
       }
 
       // No row — create profile with ₹2000
@@ -57,19 +57,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (created) {
         setProfile(created as Profile);
-        return created as Profile;
-      }
-
-      if (createErr?.code === '23505') {
+      } else if (createErr?.code === '23505') {
+        // Already exists (race condition), re-fetch
         const { data: refetch } = await supabase
           .from('profiles').select('*').eq('id', userId).maybeSingle();
-        if (refetch) { setProfile(refetch as Profile); return refetch as Profile; }
+        if (refetch) setProfile(refetch as Profile);
       }
-
-      return null;
     } catch (err) {
       console.error('[Auth] fetchProfile error:', err);
-      return null;
     }
   }, []);
 
@@ -79,68 +74,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, fetchProfile]);
 
+  // Effect 1: Listen for auth state changes
+  // CRITICAL: This callback must NOT be async to avoid deadlock with Supabase's _initialize()
   useEffect(() => {
     let mounted = true;
 
-    const init = async () => {
-      try {
-        // Step 1: Check if there's any stored session at all
-        const { data: { session: cached } } = await supabase.auth.getSession();
-
-        if (!cached) {
-          // Not logged in — nothing to do
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        // Step 2: FORCE refresh the JWT token.
-        // This is the KEY fix — getSession() returns from CACHE (expired token).
-        // refreshSession() makes a NETWORK CALL to get a brand new valid JWT.
-        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession({
-          refresh_token: cached.refresh_token,
-        });
-
-        if (refreshErr || !refreshed.session) {
-          // Refresh token expired — user must re-login
-          console.error('[Auth] Session refresh failed:', refreshErr?.message);
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        // Step 3: We now have a GUARANTEED valid JWT.
-        // Set the user and fetch profile.
-        if (mounted) {
-          const s = refreshed.session;
-          setSession(s);
-          setUser(s.user);
-          await fetchProfile(s.user.id, s.user);
-          setLoading(false);
-        }
-      } catch (err) {
-        console.error('[Auth] Init error:', err);
-        if (mounted) setLoading(false);
-      }
-    };
-
-    init();
-
-    // Listen for future auth events (login, logout, OAuth callback)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, currentSession) => {
         if (!mounted) return;
 
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          setSession(newSession);
-          setUser(newSession.user);
-          await fetchProfile(newSession.user.id, newSession.user);
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
+        console.log('[Auth] Event:', event);
+
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+        } else {
           setSession(null);
           setUser(null);
           setProfile(null);
-          setLoading(false);
         }
-        // INITIAL_SESSION and TOKEN_REFRESHED are handled by init() above
+
+        setLoading(false);
       }
     );
 
@@ -148,7 +102,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []);
+
+  // Effect 2: Fetch profile whenever user changes (separate from auth listener)
+  // This runs AFTER onAuthStateChange returns, so the internal lock is released
+  // and Supabase queries can proceed without deadlock.
+  useEffect(() => {
+    if (user?.id) {
+      fetchProfile(user.id, user);
+    }
+  }, [user?.id, fetchProfile]);
 
   return (
     <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
