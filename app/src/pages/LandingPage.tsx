@@ -125,11 +125,11 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-[106px] pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="pt-[101px] pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 mt-2 rounded-full bg-blue-500/10 border border-blue-500/20">
                 <Star className="h-4 w-4 text-blue-400" />
                 <span className="text-blue-400 text-sm font-medium">Free Virtual Trading Platform</span>
               </div>

@@ -1,33 +1,37 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Rocket, Target, Users, ShieldCheck, Globe, Code } from 'lucide-react';
+import { ArrowLeft, Rocket, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export default function AboutPage() {
     const coreValues = [
         {
-            icon: <Target className="h-6 w-6 text-blue-400" />,
+            image: "about_value_1.png",
             title: "Zero Risk, Maximum Learning",
-            description: "Our philosophy revolves around providing a completely risk-free environment. Learning to trade shouldn't cost you a fortune in market mistakes."
+            description: "Our philosophy revolves around providing a completely risk-free environment. Learning to trade shouldn't cost you a fortune in market mistakes.",
+            color: "from-blue-600 to-blue-400"
         },
         {
-            icon: <Globe className="h-6 w-6 text-purple-400" />,
+            image: "about_value_2.png",
             title: "Global Market Access",
-            description: "We bring the world's major stock exchanges—NSE, BSE, and US Markets—into a single unified platform. True financial literacy is borderless."
+            description: "We bring the world's major stock exchanges—NSE, BSE, and US Markets—into a single unified platform. True financial literacy is borderless.",
+            color: "from-purple-600 to-purple-400"
         },
         {
-            icon: <Code className="h-6 w-6 text-cyan-400" />,
+            image: "about_value_3.png",
             title: "Cutting-Edge Technology",
-            description: "Built on high-performance infrastructure, our platform simulates market conditions with ultra-low latency, offering an authentic trading experience."
+            description: "Built on high-performance infrastructure, our platform simulates market conditions with ultra-low latency, offering an authentic trading experience.",
+            color: "from-cyan-600 to-cyan-400"
         },
         {
-            icon: <ShieldCheck className="h-6 w-6 text-emerald-400" />,
+            image: "about_value_4.png",
             title: "Absolute Integrity",
-            description: "We rely on accurate, real-world data feeds to ensure the environment is as authentic as possible, operating with total transparency."
+            description: "We rely on accurate, real-world data feeds to ensure the environment is as authentic as possible, operating with total transparency.",
+            color: "from-emerald-600 to-emerald-400"
         }
     ];
 
     return (
-        <div className="min-h-screen bg-slate-950">
+        <div className="min-h-screen bg-slate-950 animate-fade-in-up">
             {/* Navigation */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-lg border-b border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -129,14 +133,21 @@ export default function AboutPage() {
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {coreValues.map((value, i) => (
-                            <div key={i} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-8 hover:bg-slate-800/50 transition-colors duration-300">
-                                <div className="h-14 w-14 rounded-full bg-slate-950 flex items-center justify-center mb-6 shadow-inner border border-slate-800">
-                                    {value.icon}
+                            <div key={i} className="relative group p-1">
+                                <div className={`absolute -inset-1 bg-gradient-to-r ${value.color} rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-700`}></div>
+                                <div className="relative bg-slate-900 border border-slate-700/50 rounded-2xl p-6 transition duration-300 h-full flex flex-col items-center text-center">
+                                    <div className="w-full h-40 mb-6 rounded-xl overflow-hidden shadow-inner border border-slate-800">
+                                        <img
+                                            src={`${import.meta.env.BASE_URL}${value.image}`}
+                                            alt={value.title}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors">{value.title}</h3>
+                                    <p className="text-slate-400 leading-relaxed text-sm">
+                                        {value.description}
+                                    </p>
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3">{value.title}</h3>
-                                <p className="text-slate-400 leading-relaxed">
-                                    {value.description}
-                                </p>
                             </div>
                         ))}
                     </div>

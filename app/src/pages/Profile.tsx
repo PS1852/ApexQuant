@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { 
-  User, 
-  Mail, 
+import {
+  User,
+  Mail,
   Wallet,
   Calendar,
   Edit2,
@@ -36,7 +36,7 @@ export default function Profile() {
     try {
       setSaving(true);
       const { error } = await updateProfile(user.id, { full_name: fullName });
-      
+
       if (error) {
         toast.error('Failed to update profile');
         return;
@@ -56,7 +56,7 @@ export default function Profile() {
     try {
       setLoggingOut(true);
       const { error } = await signOut();
-      
+
       if (error) {
         toast.error('Failed to logout');
         return;
@@ -81,9 +81,9 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-slate-950 flex animate-fade-in-up">
       <Sidebar />
-      
+
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
@@ -163,12 +163,12 @@ export default function Profile() {
                         Member Since
                       </Label>
                       <div className="p-3 rounded-lg bg-slate-800/50 text-white">
-                        {profile?.created_at 
+                        {profile?.created_at
                           ? new Date(profile.created_at).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric',
-                            })
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })
                           : 'Unknown'
                         }
                       </div>
@@ -273,8 +273,8 @@ export default function Profile() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-slate-400 text-sm">
-                    ApexQuant is a virtual trading platform that allows you to practice 
-                    stock trading with real market data without risking real money. 
+                    ApexQuant is a virtual trading platform that allows you to practice
+                    stock trading with real market data without risking real money.
                     Start with ₹2,000 virtual currency and build your trading skills.
                   </p>
                   <div className="mt-4 pt-4 border-t border-slate-800">

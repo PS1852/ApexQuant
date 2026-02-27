@@ -5,9 +5,9 @@ import { fetchMultipleQuotes, formatCurrency, formatPercentage } from '@/service
 import Sidebar from '@/components/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { 
-  Star, 
-  TrendingUp, 
+import {
+  Star,
+  TrendingUp,
   ArrowRight,
   Trash2,
   Loader2
@@ -47,9 +47,9 @@ export default function Watchlist() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-slate-950 flex animate-fade-in-up">
       <Sidebar />
-      
+
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}

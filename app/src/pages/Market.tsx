@@ -137,7 +137,7 @@ export default function Market() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen bg-slate-950 flex animate-fade-in-up">
       <Sidebar />
 
       <main className="flex-1 lg:ml-0 pt-16 lg:pt-0">
