@@ -90,11 +90,15 @@ export default function HowItWorksPage() {
                     <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-transparent to-slate-950" />
                 </div>
 
-                <div className="relative z-10 text-center space-y-8 max-w-4xl px-4 mt-20">
-                    <h1 className="text-6xl sm:text-8xl font-black uppercase tracking-tighter mix-blend-overlay opacity-90">
-                        The Process
+                <div className="relative z-10 text-center space-y-6 max-w-3xl px-4 mt-8 animate-fade-in-up">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 mb-4 backdrop-blur-md">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                        <span className="text-blue-400 text-sm font-medium tracking-wide uppercase">Workflow Architecture</span>
+                    </div>
+                    <h1 className="text-4xl sm:text-5xl md:text-7xl font-light tracking-tight text-white drop-shadow-md">
+                        The <span className="font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">Process</span>
                     </h1>
-                    <p className="text-2xl text-slate-300 font-light max-w-2xl mx-auto">
+                    <p className="text-lg md:text-xl text-slate-300 font-light max-w-2xl mx-auto leading-relaxed pt-2">
                         From the moment you create your account to mastering the institutional order flow, discover the seamless journey of an ApexQuant trader.
                     </p>
                 </div>
