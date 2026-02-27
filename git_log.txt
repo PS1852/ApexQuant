@@ -1,0 +1,10 @@
+1408e91a fix(landing): restore original landing page exactly as requested
+6468aa2b feat: redesign how it works page and fix landing page build
+95d0aa7d fix backup
+958b9069 fix(ui): remove buggy scroll spy in how it works, redesign layout text block on landing page without gap
+b078615d fix(ui): remove main app animations, fix about page images, exact gap fix
+f5634c54 feat(ui): add global fade-in animations across all pages, replace about page icons with generated luxury images, remove landing page gap
+c094e47c fix(dashboard): fetch live stock prices so Total Portfolio shows real market value instead of always 2000
+82dd7d98 feat(ui): refine landing spacing, update blog page layout, replace icons with glowing images in how-it-works
+129a9803 feat(ui): add luxurious new features, how-it-works, and dynamic blog post pages
+505419cf feat(ui): add blog page, scroll to top router fix, adjust landing gaps, fix contact page layout

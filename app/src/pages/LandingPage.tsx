@@ -125,18 +125,16 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-[106px] pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-12 items-center">
-
-          {/* Left Text Content */}
-          <div className="flex-1 w-full flex flex-col justify-center space-y-6 lg:py-12">
-            <div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full bg-blue-500/10 border border-blue-500/20">
+      <section className="pt-[101px] pb-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-start mt-8">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 mt-2 rounded-full bg-blue-500/10 border border-blue-500/20">
                 <Star className="h-4 w-4 text-blue-400" />
                 <span className="text-blue-400 text-sm font-medium">Free Virtual Trading Platform</span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-5xl xl:text-6xl font-bold text-white leading-[1.1]">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
                 Master Trading with{' '}
                 <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
                   Zero Risk
@@ -172,33 +170,32 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right Dashboard Mockup */}
-        <div className="flex-1 w-full relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl max-w-lg mx-auto" />
-          <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-800 p-6 shadow-2xl max-w-lg mx-auto">
-            <img
-              src={`${import.meta.env.BASE_URL}logo.svg`}
-              alt="Trading Dashboard"
-              className="w-full h-auto rounded-xl"
-            />
-            <div className="mt-6 grid grid-cols-3 gap-4">
-              <div className="bg-slate-800/50 rounded-xl p-4">
-                <p className="text-slate-400 text-xs">Portfolio Value</p>
-                <p className="text-emerald-400 font-bold text-base sm:text-lg">₹2,450.00</p>
-                <p className="text-emerald-400 text-xs">+22.5%</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4">
-                <p className="text-slate-400 text-xs">Day P&L</p>
-                <p className="text-emerald-400 font-bold text-base sm:text-lg">+₹125.50</p>
-                <p className="text-emerald-400 text-xs">+5.2%</p>
-              </div>
-              <div className="bg-slate-800/50 rounded-xl p-4">
-                <p className="text-slate-400 text-xs">Trades Today</p>
-                <p className="text-blue-400 font-bold text-base sm:text-lg">12</p>
-                <p className="text-slate-500 text-xs">8 buys, 4 sells</p>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-3xl blur-3xl" />
+              <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-800 p-6 shadow-2xl">
+                <img
+                  src={`${import.meta.env.BASE_URL}logo.svg`}
+                  alt="Trading Dashboard"
+                  className="w-full h-auto rounded-xl"
+                />
+                <div className="mt-6 grid grid-cols-3 gap-4">
+                  <div className="bg-slate-800/50 rounded-xl p-4">
+                    <p className="text-slate-400 text-xs">Portfolio Value</p>
+                    <p className="text-emerald-400 font-bold text-lg">₹2,450.00</p>
+                    <p className="text-emerald-400 text-xs">+22.5%</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4">
+                    <p className="text-slate-400 text-xs">Day P&L</p>
+                    <p className="text-emerald-400 font-bold text-lg">+₹125.50</p>
+                    <p className="text-emerald-400 text-xs">+5.2%</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded-xl p-4">
+                    <p className="text-slate-400 text-xs">Trades Today</p>
+                    <p className="text-blue-400 font-bold text-lg">12</p>
+                    <p className="text-slate-500 text-xs">8 buys, 4 sells</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -440,6 +437,6 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div >
+    </div>
   );
 }
