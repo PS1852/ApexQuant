@@ -204,6 +204,7 @@ export default function LandingPage() {
           </div>
         </div>
     </div>
+        </div >
       </section >
 
     {/* Stats Section */ }
@@ -297,6 +298,7 @@ export default function LandingPage() {
               )}
             </div>
           ))}
+            ))}
         </div>
       </div>
       </section >
@@ -352,6 +354,7 @@ export default function LandingPage() {
               </div>
             </div>
           ))}
+            ))}
         </div>
       </div>
       </section >
@@ -387,60 +390,58 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="py-12 px-4 sm:px-6 lg:px-8 border-t border-slate-800">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-4 gap-8 mb-8">
+              <div>
+                <Link to="/" className="flex items-center gap-2 mb-4">
+                  <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-8 w-8" />
+                  <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    ApexQuant
+                  </span>
+                </Link>
+                <p className="text-slate-400 text-sm">
+                  The ultimate virtual trading platform for learning and practicing stock trading.
+                </p>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Product</h4>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li><Link to="/features" className="hover:text-white transition-colors">Features</Link></li>
+                  <li><Link to="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Company</h4>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li><Link to="/about" className="hover:text-white transition-colors">About</Link></li>
+                  <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
+                  <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-white font-semibold mb-4">Legal</h4>
+                <ul className="space-y-2 text-sm text-slate-400">
+                  <li><Link to="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link to="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                  <li><Link to="/legal/disclaimer" className="hover:text-white transition-colors">Disclaimer</Link></li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-slate-500">
+                © 2025 ApexQuant. All rights reserved. Not a real trading platform.
+              </p>
+            </div>
+          </div>
+        </footer>
       </div>
-      </section >
-
-    {/* Footer */ }
-    < footer className = "py-12 px-4 sm:px-6 lg:px-8 border-t border-slate-800" >
-      <div className="max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-4 gap-8 mb-8">
-          <div>
-            <Link to="/" className="flex items-center gap-2 mb-4">
-              <img src={`${import.meta.env.BASE_URL}logo.svg`} alt="ApexQuant" className="h-8 w-8" />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                ApexQuant
-              </span>
-            </Link>
-            <p className="text-slate-400 text-sm">
-              The ultimate virtual trading platform for learning and practicing stock trading.
-            </p>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Product</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/features" className="hover:text-white transition-colors">Features</Link></li>
-              <li><Link to="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/about" className="hover:text-white transition-colors">About</Link></li>
-              <li><Link to="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-              <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="text-white font-semibold mb-4">Legal</h4>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li><Link to="/legal/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/legal/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link to="/legal/disclaimer" className="hover:text-white transition-colors">Disclaimer</Link></li>
-            </ul>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-slate-500">
-            © 2025 ApexQuant. All rights reserved. Not a real trading platform.
-          </p>
-        </div>
-      </div>
-      </footer >
-    </div >
   );
 }
