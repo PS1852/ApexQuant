@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types';
 
@@ -7,6 +7,8 @@ interface AuthContextType {
   profile: Profile | null;
   session: any | null;
   loading: boolean;
+  /** True once we have a validated session + profile */
+  ready: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -17,6 +19,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProfile = useCallback(async (userId: string, userMeta: any): Promise<Profile | null> => {
     try {
@@ -60,7 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return created as Profile;
       }
 
-      // Insert conflict — profile was created concurrently, re-fetch
       if (createErr?.code === '23505') {
         const { data: refetch } = await supabase
           .from('profiles')
@@ -89,13 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // ABSOLUTE safety net — loading can NEVER stay true beyond 5 seconds
+    // SAFETY: loading NEVER stays true for more than 4 seconds
     const safetyTimer = setTimeout(() => {
-      if (mounted) {
-        console.warn('[Auth] Safety timeout hit');
+      if (mounted && loading) {
+        console.warn('[Auth] Safety timeout — forcing loading=false');
         setLoading(false);
       }
-    }, 5000);
+    }, 4000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
@@ -103,60 +106,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         console.log('[Auth] Event:', event);
 
-        // -- Handle logout or no session --
-        if (event === 'SIGNED_OUT') {
+        // No session (signed out or not logged in)
+        if (!currentSession?.user) {
           setSession(null);
           setUser(null);
           setProfile(null);
+          setReady(false);
           setLoading(false);
           return;
         }
 
-        // -- No user in session --
-        if (!currentSession?.user) {
-          if (event === 'INITIAL_SESSION') {
-            // Not logged in at all
-            setLoading(false);
-          }
-          return;
-        }
-
-        // -- We have a session with a user --
+        // We have a session
         const u = currentSession.user;
+        setSession(currentSession);
+        setUser(u);
 
-        if (event === 'INITIAL_SESSION') {
-          // Session from cache. Token might be expired.
-          // Try fetching profile — this tests if the JWT works.
-          setSession(currentSession);
-          const p = await fetchProfile(u.id, u);
+        // Try to fetch profile
+        const p = await fetchProfile(u.id, u);
 
-          if (mounted && p) {
-            // JWT was valid! Set user, profile is already set, done.
-            setUser(u);
-            setLoading(false);
+        if (mounted) {
+          if (p) {
+            setReady(true);
+          } else if (event === 'INITIAL_SESSION') {
+            // Profile failed on initial load — expired JWT.
+            // Schedule a retry in 2 seconds (token should be refreshed by then)
+            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = setTimeout(async () => {
+              if (!mounted) return;
+              console.log('[Auth] Retrying profile fetch...');
+              const retry = await fetchProfile(u.id, u);
+              if (retry && mounted) {
+                setReady(true);
+              }
+            }, 2000);
           }
-          // If profile fetch failed (JWT expired), DON'T set user yet.
-          // DON'T set loading=false. Wait for TOKEN_REFRESHED.
-          // The safety timer at 5s is our fallback.
-          return;
-        }
-
-        if (event === 'TOKEN_REFRESHED') {
-          // Token has been refreshed — JWT is now valid!
-          setSession(currentSession);
-          setUser(u);
-          await fetchProfile(u.id, u);
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          // Fresh login (OAuth callback, email login, etc.)
-          setSession(currentSession);
-          setUser(u);
-          await fetchProfile(u.id, u);
-          if (mounted) setLoading(false);
-          return;
+          setLoading(false);
         }
       }
     );
@@ -164,12 +148,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
       clearTimeout(safetyTimer);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, ready, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

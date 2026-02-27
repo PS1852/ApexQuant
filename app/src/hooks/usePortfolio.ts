@@ -4,15 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { PortfolioItem } from '@/types';
 
 export function usePortfolio() {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPortfolio = useCallback(async () => {
-    if (!user?.id) {
-      setPortfolio([]);
-      setLoading(false);
+    if (!user?.id || !ready) {
+      if (!user?.id) {
+        setPortfolio([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -34,30 +36,31 @@ export function usePortfolio() {
     } catch (err: any) {
       console.error('Error fetching portfolio:', err);
       setError(err.message || 'Failed to fetch portfolio');
+      setPortfolio([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id]);
+  }, [user?.id, ready]);
 
   const updatePortfolioPrices = useCallback(async (prices: Record<string, number>) => {
     if (!portfolio.length) return;
 
     const updatedPortfolio = portfolio.map(item => {
-      const currentPrice = prices[item.symbol] || item.current_price || item.average_price;
-      const totalInvestment = item.shares * item.average_price;
-      const currentValue = currentPrice * item.shares;
-      const unrealizedPnl = currentValue - totalInvestment;
-      const unrealizedPnlPercent = totalInvestment > 0
-        ? (unrealizedPnl / totalInvestment) * 100
-        : 0;
-
-      return {
-        ...item,
-        current_price: currentPrice,
-        current_value: currentValue,
-        unrealized_pnl: unrealizedPnl,
-        unrealized_pnl_percent: unrealizedPnlPercent,
-      };
+      const currentPrice = prices[item.symbol];
+      if (currentPrice) {
+        const currentValue = item.shares * currentPrice;
+        const investedValue = item.shares * item.average_price;
+        return {
+          ...item,
+          current_price: currentPrice,
+          current_value: currentValue,
+          unrealized_pnl: currentValue - investedValue,
+          unrealized_pnl_percent: investedValue > 0
+            ? ((currentValue - investedValue) / investedValue) * 100
+            : 0,
+        };
+      }
+      return item;
     });
 
     setPortfolio(updatedPortfolio);
@@ -67,9 +70,18 @@ export function usePortfolio() {
     fetchPortfolio();
   }, [fetchPortfolio]);
 
+  // Loading timeout — never show "Loading..." for more than 5 seconds
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   // Subscribe to realtime changes
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !ready) return;
 
     const subscription = supabase
       .channel('portfolio_changes')
@@ -90,7 +102,7 @@ export function usePortfolio() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [user?.id, fetchPortfolio]);
+  }, [user?.id, ready, fetchPortfolio]);
 
   const stats = {
     totalInvestment: portfolio.reduce((sum, item) => sum + (item.shares * item.average_price), 0),

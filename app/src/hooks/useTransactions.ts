@@ -4,15 +4,17 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction } from '@/types';
 
 export function useTransactions(limit: number = 100) {
-  const { user } = useAuth();
+  const { user, ready } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
-    if (!user?.id) {
-      setTransactions([]);
-      setLoading(false);
+    if (!user?.id || !ready) {
+      if (!user?.id) {
+        setTransactions([]);
+        setLoading(false);
+      }
       return;
     }
 
@@ -35,18 +37,28 @@ export function useTransactions(limit: number = 100) {
     } catch (err: any) {
       console.error('Error fetching transactions:', err);
       setError(err.message || 'Failed to fetch transactions');
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
-  }, [user?.id, limit]);
+  }, [user?.id, limit, ready]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
+  // Loading timeout
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
   // Subscribe to realtime changes
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !ready) return;
 
     const subscription = supabase
       .channel('transactions_changes')
@@ -67,7 +79,7 @@ export function useTransactions(limit: number = 100) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [user?.id]);
+  }, [user?.id, ready]);
 
   const stats = {
     totalBuyValue: transactions
@@ -76,7 +88,7 @@ export function useTransactions(limit: number = 100) {
     totalSellValue: transactions
       .filter(t => t.type === 'SELL')
       .reduce((sum, t) => sum + t.amount, 0),
-    totalRealizedPnl: 0, // Not stored in DB
+    totalRealizedPnl: 0,
     buyCount: transactions.filter(t => t.type === 'BUY').length,
     sellCount: transactions.filter(t => t.type === 'SELL').length,
   };
