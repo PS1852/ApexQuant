@@ -7,6 +7,9 @@ interface AuthContextType {
   profile: Profile | null;
   session: any | null;
   loading: boolean;
+  /** Increments every time the session is validated/refreshed.
+   *  Hooks should use this as a dependency to re-fetch data. */
+  sessionVersion: number;
   refreshProfile: () => Promise<void>;
 }
 
@@ -17,6 +20,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  // This counter increments every time we get a VALID session.
+  // Hooks depend on this to know when to re-fetch.
+  const [sessionVersion, setSessionVersion] = useState(0);
 
   const fetchOrCreateProfile = useCallback(async (currentUser: any): Promise<Profile | null> => {
     try {
@@ -30,6 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (fetchErr) {
         console.error('[Auth] Profile fetch error:', fetchErr);
+        // If it's a JWT error, don't create a fallback profile
+        if (fetchErr.message?.includes('JWT') || fetchErr.code === 'PGRST301') {
+          return null;
+        }
       }
 
       if (data) {
@@ -86,48 +96,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let initDone = false;
 
-    // Step 1: Get current session (synchronous-like, from local storage)
-    const initAuth = async () => {
-      try {
-        const { data: { session: s }, error } = await supabase.auth.getSession();
-
-        if (error) {
-          console.error('[Auth] getSession error:', error);
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        if (!mounted) return;
-
-        if (s?.user) {
-          setSession(s);
-          setUser(s.user);
-          await fetchOrCreateProfile(s.user);
-        }
-
-        initDone = true;
-      } catch (error) {
-        console.error('[Auth] init error:', error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // Step 2: Listen for auth state changes
+    // Use onAuthStateChange as the SINGLE source of truth.
+    // It fires INITIAL_SESSION immediately with a refreshed token.
+    // We do NOT use getSession() to set user — only onAuthStateChange.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
         if (!mounted) return;
 
-        console.log('[Auth] Event:', event);
+        console.log('[Auth] Event:', event, currentSession ? 'has session' : 'no session');
 
         if (event === 'SIGNED_OUT') {
           setSession(null);
           setUser(null);
           setProfile(null);
+          setSessionVersion(0);
           setLoading(false);
           return;
         }
@@ -136,12 +119,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setSession(currentSession);
           setUser(currentSession.user);
 
-          // On INITIAL_SESSION, only fetch if initAuth hasn't done it yet
-          // On SIGNED_IN or TOKEN_REFRESHED, always re-fetch
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-            await fetchOrCreateProfile(currentSession.user);
-          } else if (event === 'INITIAL_SESSION' && !initDone) {
-            await fetchOrCreateProfile(currentSession.user);
+          // Fetch profile for any session event
+          const p = await fetchOrCreateProfile(currentSession.user);
+          if (p) {
+            // Bump session version so all hooks know to re-fetch
+            setSessionVersion(v => v + 1);
           }
         }
 
@@ -149,23 +131,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
-    // Safety net: never stay loading for more than 8 seconds
-    const safetyTimer = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('[Auth] Safety timeout — forcing loading=false');
-        setLoading(false);
+    // Fallback: if onAuthStateChange never fires (edge case), check getSession
+    const fallbackTimer = setTimeout(async () => {
+      if (!mounted || !loading) return;
+
+      console.log('[Auth] Fallback: checking getSession...');
+      const { data: { session: s } } = await supabase.auth.getSession();
+
+      if (!mounted) return;
+
+      if (s?.user) {
+        setSession(s);
+        setUser(s.user);
+        const p = await fetchOrCreateProfile(s.user);
+        if (p) setSessionVersion(v => v + 1);
       }
-    }, 8000);
+
+      setLoading(false);
+    }, 3000);
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
+      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, [fetchOrCreateProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, sessionVersion, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
