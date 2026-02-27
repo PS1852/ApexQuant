@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Target, Rocket, Award, Monitor, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 
@@ -26,28 +26,28 @@ export default function HowItWorksPage() {
             id: "01",
             title: "Initiate Your Account",
             desc: "Sign up instantly and receive a virtual credit of ₹2,000. No credit cards, no KYC, no delays. Just pure, immediate access to the markets.",
-            icon: <Target className="w-12 h-12 text-blue-400" />,
+            image: "how_works_1.png",
             color: "from-blue-600 to-blue-400"
         },
         {
             id: "02",
             title: "Scout the Dashboard",
             desc: "Analyze real-time market movers, top gainers, and losers. Use professional-grade technical charts to identify your entry points before the crowd.",
-            icon: <Monitor className="w-12 h-12 text-purple-400" />,
+            image: "how_works_2.png",
             color: "from-purple-600 to-purple-400"
         },
         {
             id: "03",
             title: "Execute the Strategy",
             desc: "Lock in your positions using instantaneous order execution. Whether it's a market buy or limit sell, your strategy hits the tape at zero latency.",
-            icon: <Rocket className="w-12 h-12 text-cyan-400" />,
+            image: "how_works_3.png",
             color: "from-cyan-600 to-cyan-400"
         },
         {
             id: "04",
             title: "Dominance & Adaptation",
             desc: "Track your portfolio's performance. Adapt to volatility spikes, study your transaction history, and refine your edge to conquer the simulated market.",
-            icon: <Award className="w-12 h-12 text-emerald-400" />,
+            image: "how_works_4.png",
             color: "from-emerald-600 to-emerald-400"
         }
     ];
@@ -125,12 +125,14 @@ export default function HowItWorksPage() {
 
                                     {/* Left Side Content/Image */}
                                     <div className={`w-full md:w-1/2 ${isEven ? 'md:text-right md:order-1 order-2' : 'md:order-2 order-2'}`}>
-                                        <div className="p-10 rounded-3xl bg-slate-900/50 backdrop-blur-xl border border-white/5 shadow-2xl relative group">
-                                            <div className={`absolute -inset-0.5 bg-gradient-to-r ${step.color} rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000`} />
-                                            <div className="relative bg-slate-950 p-8 rounded-2xl h-full border border-slate-800 flex items-center justify-center min-h-[300px]">
-                                                <div className="animate-float">
-                                                    {step.icon}
-                                                </div>
+                                        <div className="relative group p-1">
+                                            <div className={`absolute -inset-1 bg-gradient-to-r ${step.color} rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000`} />
+                                            <div className="relative bg-slate-900 rounded-3xl p-1 border border-slate-700/50 shadow-2xl w-full h-[350px] sm:h-[450px]">
+                                                <img
+                                                    src={`${import.meta.env.BASE_URL}${step.image}`}
+                                                    alt={step.title}
+                                                    className="w-full h-full object-cover rounded-[22px] opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                                                />
                                             </div>
                                         </div>
                                     </div>

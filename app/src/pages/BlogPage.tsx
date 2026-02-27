@@ -101,8 +101,9 @@ export default function BlogPage() {
                     <TrendingUp className="h-6 w-6 text-blue-400" /> Featured Post
                 </h2>
 
-                <Link to={`/blog/${featuredPost.slug}`} className="block group cursor-pointer relative rounded-3xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-blue-500/50 transition-colors duration-500">
-                    <div className="grid lg:grid-cols-2 gap-0 relative z-10">
+                <Link to={`/blog/${featuredPost.slug}`} className="block group cursor-pointer relative rounded-3xl p-1 mb-8">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000"></div>
+                    <div className="grid lg:grid-cols-2 gap-0 relative z-10 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden">
                         <div className="h-[300px] lg:h-auto w-full overflow-hidden">
                             <img
                                 src={featuredPost.image}
@@ -151,53 +152,34 @@ export default function BlogPage() {
                 <h2 className="text-2xl font-bold text-white mb-8">Recent Articles</h2>
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {recentPosts.map((post, i) => (
-                        <Link key={i} to={`/blog/${post.slug}`} className="group cursor-pointer bg-slate-900/50 border border-slate-800 hover:border-slate-600 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-slate-900/50 flex flex-col">
-                            <div className={`h-48 w-full ${post.image} border-b flex items-center justify-center relative overflow-hidden`}>
-                                <div className="absolute inset-0 bg-gradient-to-br from-transparent to-slate-950/80 pointer-events-none z-10" />
-                                <BookOpen className="w-16 h-16 text-slate-700/50 group-hover:scale-110 transition-transform duration-500" />
-                            </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                                <div className="flex items-center justify-between mb-4">
-                                    <Badge variant="outline" className="border-slate-700 text-slate-300">
-                                        {post.category}
-                                    </Badge>
-                                    <span className="text-xs text-slate-500">{post.readTime}</span>
+                        <div key={i} className="relative group p-1 h-full">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-cyan-500 rounded-2xl blur opacity-15 group-hover:opacity-50 transition duration-700"></div>
+                            <Link to={`/blog/${post.slug}`} className="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden transition-all duration-300 flex flex-col h-full group-hover:bg-slate-900">
+                                <div className={`h-48 w-full ${post.image} border-b border-slate-800 flex items-center justify-center relative overflow-hidden`}>
+                                    <div className="absolute inset-0 bg-gradient-to-br from-transparent to-slate-950/80 pointer-events-none z-10" />
+                                    <BookOpen className="w-16 h-16 text-slate-700/50 group-hover:scale-110 transition-transform duration-500" />
                                 </div>
-                                <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors line-clamp-2">
-                                    {post.title}
-                                </h3>
-                                <p className="text-slate-400 text-sm mb-6 line-clamp-3">
-                                    {post.excerpt}
-                                </p>
-                                <div className="mt-auto pt-6 border-t border-slate-800 flex items-center justify-between">
-                                    <span className="text-xs text-slate-500">{post.date}</span>
-                                    <span className="text-sm text-blue-400 font-medium group-hover:underline">Read Article</span>
+                                <div className="p-6 flex flex-col flex-grow">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <Badge variant="outline" className="border-slate-700 text-slate-300">
+                                            {post.category}
+                                        </Badge>
+                                        <span className="text-xs text-slate-500">{post.readTime}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors line-clamp-2">
+                                        {post.title}
+                                    </h3>
+                                    <p className="text-slate-400 text-sm mb-6 line-clamp-3">
+                                        {post.excerpt}
+                                    </p>
+                                    <div className="mt-auto pt-6 border-t border-slate-800 flex items-center justify-between">
+                                        <span className="text-xs text-slate-500">{post.date}</span>
+                                        <span className="text-sm text-blue-400 font-medium group-hover:text-blue-300 transition-colors">Read Article</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </Link>
-                    ))}
-                </div>
-            </section>
-
-            {/* Newsletter */}
-            <section className="py-24 px-4 sm:px-6 lg:px-8 border-t border-slate-800">
-                <div className="max-w-4xl mx-auto text-center">
-                    <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-3xl p-8 sm:p-12 border border-blue-500/20">
-                        <h2 className="text-3xl font-bold text-white mb-4">Subscribe to our Newsletter</h2>
-                        <p className="text-slate-400 mb-8 max-w-2xl mx-auto">
-                            Get the latest market insights, trading strategies, and platform updates delivered straight to your inbox.
-                        </p>
-                        <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4">
-                            <input
-                                type="email"
-                                placeholder="Enter your email"
-                                className="flex-grow bg-slate-950 border border-slate-700 text-white rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap">
-                                Subscribe
-                            </Button>
+                            </Link>
                         </div>
-                    </div>
+                    ))}
                 </div>
             </section>
 
