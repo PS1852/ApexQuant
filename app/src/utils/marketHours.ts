@@ -2,15 +2,15 @@
  * Market hours awareness for NSE and NYSE
  */
 
-export function isNSEOpen(): boolean {
+function getTimeInZone(timeZone: string): { hour: number; minute: number; day: string } {
     const now = new Date();
 
     const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Asia/Kolkata',
+        timeZone,
         hour: 'numeric',
         minute: 'numeric',
         weekday: 'short',
-        hour12: false
+        hour12: false,
     });
 
     const parts = formatter.formatToParts(now);
@@ -22,38 +22,29 @@ export function isNSEOpen(): boolean {
         if (part.type === 'weekday') dayString = part.value;
     }
 
-    if (dayString === 'Sun' || dayString === 'Sat') return false; // Weekend
+    // Intl returns 24 for midnight with hour12:false — normalise to 0
+    if (h === 24) h = 0;
 
-    const mins = h * 60 + m;
-    // 9:15 AM to 3:30 PM IST is 555 mins to 930 mins
+    return { hour: h, minute: m, day: dayString };
+}
+
+export function isNSEOpen(): boolean {
+    const { hour, minute, day } = getTimeInZone('Asia/Kolkata');
+
+    if (day === 'Sat' || day === 'Sun') return false;
+
+    const mins = hour * 60 + minute;
+    // NSE: 9:15 AM – 3:30 PM IST → 555 – 930 mins
     return mins >= 555 && mins <= 930;
 }
 
 export function isNYSEOpen(): boolean {
-    const now = new Date();
+    const { hour, minute, day } = getTimeInZone('America/New_York');
 
-    // Parse the actual New York time
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'America/New_York',
-        hour: 'numeric',
-        minute: 'numeric',
-        weekday: 'short',
-        hour12: false
-    });
+    if (day === 'Sat' || day === 'Sun') return false;
 
-    const parts = formatter.formatToParts(now);
-    let h = 0, m = 0, dayString = '';
-
-    for (const part of parts) {
-        if (part.type === 'hour') h = parseInt(part.value, 10);
-        if (part.type === 'minute') m = parseInt(part.value, 10);
-        if (part.type === 'weekday') dayString = part.value;
-    }
-
-    if (dayString === 'Sun' || dayString === 'Sat') return false; // Weekend
-
-    const mins = h * 60 + m;
-    // 9:30 AM to 4:00 PM EST is 570 mins to 960 mins
+    const mins = hour * 60 + minute;
+    // NYSE: 9:30 AM – 4:00 PM ET → 570 – 960 mins
     return mins >= 570 && mins <= 960;
 }
 
