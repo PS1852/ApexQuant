@@ -7,6 +7,7 @@ import LandingPage from '@/pages/LandingPage';
 import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import AuthCallback from '@/pages/AuthCallback';
+import LegalPage from '@/pages/LegalPage';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Market from '@/pages/Market';
@@ -28,6 +29,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/legal/:document" element={<LegalPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={
