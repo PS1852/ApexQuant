@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { WatchlistItem } from '@/types';
 
 export function useWatchlist() {
-  const { user, sessionVersion } = useAuth();
+  const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function useWatchlist() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, sessionVersion]);
+  }, [user?.id]);
 
   const addToWatchlist = async (symbol: string) => {
     if (!user?.id) {
@@ -98,7 +98,7 @@ export function useWatchlist() {
 
   useEffect(() => {
     fetchWatchlist();
-  }, [fetchWatchlist, sessionVersion]);
+  }, [fetchWatchlist]);
 
   // Subscribe to realtime changes
   useEffect(() => {

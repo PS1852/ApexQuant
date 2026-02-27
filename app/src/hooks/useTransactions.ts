@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction } from '@/types';
 
 export function useTransactions(limit: number = 100) {
-  const { user, sessionVersion } = useAuth();
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,11 +38,11 @@ export function useTransactions(limit: number = 100) {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, limit, sessionVersion]);
+  }, [user?.id, limit]);
 
   useEffect(() => {
     fetchTransactions();
-  }, [fetchTransactions, sessionVersion]);
+  }, [fetchTransactions]);
 
   // Subscribe to realtime changes
   useEffect(() => {

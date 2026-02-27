@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { PortfolioItem } from '@/types';
 
 export function usePortfolio() {
-  const { user, sessionVersion } = useAuth();
+  const { user } = useAuth();
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function usePortfolio() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, sessionVersion]);
+  }, [user?.id]);
 
   const updatePortfolioPrices = useCallback(async (prices: Record<string, number>) => {
     if (!portfolio.length) return;
@@ -65,7 +65,7 @@ export function usePortfolio() {
 
   useEffect(() => {
     fetchPortfolio();
-  }, [fetchPortfolio, sessionVersion]);
+  }, [fetchPortfolio]);
 
   // Subscribe to realtime changes
   useEffect(() => {

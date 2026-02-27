@@ -7,9 +7,6 @@ interface AuthContextType {
   profile: Profile | null;
   session: any | null;
   loading: boolean;
-  /** Increments every time the session is validated/refreshed.
-   *  Hooks should use this as a dependency to re-fetch data. */
-  sessionVersion: number;
   refreshProfile: () => Promise<void>;
 }
 
@@ -20,145 +17,144 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  // This counter increments every time we get a VALID session.
-  // Hooks depend on this to know when to re-fetch.
-  const [sessionVersion, setSessionVersion] = useState(0);
 
-  const fetchOrCreateProfile = useCallback(async (currentUser: any): Promise<Profile | null> => {
+  const fetchProfile = useCallback(async (userId: string, userMeta: any): Promise<Profile | null> => {
     try {
-      console.log('[Auth] Fetching profile for', currentUser.id);
-
-      const { data, error: fetchErr } = await supabase
+      // Try to get existing profile
+      const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', currentUser.id)
+        .eq('id', userId)
         .maybeSingle();
 
-      if (fetchErr) {
-        console.error('[Auth] Profile fetch error:', fetchErr);
-        // If it's a JWT error, don't create a fallback profile
-        if (fetchErr.message?.includes('JWT') || fetchErr.code === 'PGRST301') {
-          return null;
-        }
-      }
-
       if (data) {
-        console.log('[Auth] Profile found, balance:', data.balance);
         setProfile(data as Profile);
         return data as Profile;
       }
 
-      // Profile doesn't exist — create one with ₹2000
-      console.log('[Auth] Creating profile with ₹2000...');
+      if (error) {
+        console.error('[Auth] Profile fetch error:', error.message);
+        return null;
+      }
+
+      // No profile found — create one
       const newProfile = {
-        id: currentUser.id,
-        email: currentUser.email || '',
-        full_name: currentUser.user_metadata?.full_name ||
-          currentUser.user_metadata?.name ||
-          currentUser.email?.split('@')[0] || 'Trader',
-        avatar_url: currentUser.user_metadata?.avatar_url ||
-          currentUser.user_metadata?.picture || null,
+        id: userId,
+        email: userMeta?.email || '',
+        full_name: userMeta?.user_metadata?.full_name ||
+          userMeta?.user_metadata?.name ||
+          userMeta?.email?.split('@')[0] || 'Trader',
+        avatar_url: userMeta?.user_metadata?.avatar_url ||
+          userMeta?.user_metadata?.picture || null,
         balance: 2000.00,
         currency: 'INR'
       };
 
-      const { data: created, error: createError } = await supabase
+      const { data: created, error: createErr } = await supabase
         .from('profiles')
-        .upsert([newProfile], { onConflict: 'id' })
+        .insert([newProfile])
         .select()
         .maybeSingle();
 
-      if (createError) {
-        console.error('[Auth] Profile create error:', createError);
-        const fallback = { ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile;
-        setProfile(fallback);
-        return fallback;
-      }
-
       if (created) {
-        console.log('[Auth] Profile created, balance:', created.balance);
         setProfile(created as Profile);
         return created as Profile;
       }
 
+      if (createErr) {
+        // Profile might already exist (race condition) — try fetching again
+        if (createErr.code === '23505') {
+          const { data: refetch } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
+          if (refetch) {
+            setProfile(refetch as Profile);
+            return refetch as Profile;
+          }
+        }
+        console.error('[Auth] Profile create error:', createErr.message);
+      }
+
       return null;
-    } catch (error) {
-      console.error('[Auth] fetchOrCreateProfile error:', error);
+    } catch (err) {
+      console.error('[Auth] fetchProfile exception:', err);
       return null;
     }
   }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user?.id) {
-      await fetchOrCreateProfile(user);
+      await fetchProfile(user.id, user);
     }
-  }, [user, fetchOrCreateProfile]);
+  }, [user, fetchProfile]);
 
   useEffect(() => {
     let mounted = true;
 
-    // Use onAuthStateChange as the SINGLE source of truth.
-    // It fires INITIAL_SESSION immediately with a refreshed token.
-    // We do NOT use getSession() to set user — only onAuthStateChange.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
+    const initialize = async () => {
+      try {
+        // getUser() makes a NETWORK CALL to Supabase Auth server.
+        // This validates the JWT and refreshes it if expired.
+        // Unlike getSession() which just reads from local storage cache.
+        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
 
-        console.log('[Auth] Event:', event, currentSession ? 'has session' : 'no session');
-
-        if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setSessionVersion(0);
-          setLoading(false);
+        if (userError || !validUser) {
+          // No valid user — not logged in or token fully expired
+          if (mounted) setLoading(false);
           return;
         }
 
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
+        // Now we have a validated user with a fresh JWT.
+        // Get the session (which now has the refreshed token).
+        const { data: { session: freshSession } } = await supabase.auth.getSession();
 
-          // Fetch profile for any session event
-          const p = await fetchOrCreateProfile(currentSession.user);
-          if (p) {
-            // Bump session version so all hooks know to re-fetch
-            setSessionVersion(v => v + 1);
-          }
+        if (!mounted) return;
+
+        if (freshSession) {
+          setSession(freshSession);
+          setUser(validUser);
+          await fetchProfile(validUser.id, validUser);
         }
-
+      } catch (err) {
+        console.error('[Auth] Initialize error:', err);
+      } finally {
         if (mounted) setLoading(false);
+      }
+    };
+
+    initialize();
+
+    // Listen for future auth events (login, logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          setSession(newSession);
+          setUser(newSession.user);
+          await fetchProfile(newSession.user.id, newSession.user);
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
+        // We intentionally IGNORE 'INITIAL_SESSION' and 'TOKEN_REFRESHED'
+        // because initialize() above already handles those cases with getUser().
       }
     );
 
-    // Fallback: if onAuthStateChange never fires (edge case), check getSession
-    const fallbackTimer = setTimeout(async () => {
-      if (!mounted || !loading) return;
-
-      console.log('[Auth] Fallback: checking getSession...');
-      const { data: { session: s } } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (s?.user) {
-        setSession(s);
-        setUser(s.user);
-        const p = await fetchOrCreateProfile(s.user);
-        if (p) setSessionVersion(v => v + 1);
-      }
-
-      setLoading(false);
-    }, 3000);
-
     return () => {
       mounted = false;
-      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
-  }, [fetchOrCreateProfile]);
+  }, [fetchProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, sessionVersion, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
