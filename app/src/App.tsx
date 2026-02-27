@@ -8,6 +8,8 @@ import LoginPage from '@/pages/LoginPage';
 import SignupPage from '@/pages/SignupPage';
 import AuthCallback from '@/pages/AuthCallback';
 import LegalPage from '@/pages/LegalPage';
+import AboutPage from '@/pages/AboutPage';
+import ContactPage from '@/pages/ContactPage';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Market from '@/pages/Market';
@@ -30,6 +32,8 @@ function App() {
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/legal/:document" element={<LegalPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={

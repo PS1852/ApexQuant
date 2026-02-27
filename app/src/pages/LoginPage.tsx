@@ -64,16 +64,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
-      <div className="w-full max-w-md relative">
-        <Link
-          to="/"
-          className="absolute -top-12 left-0 flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Home
-        </Link>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 relative">
+      <Link
+        to="/"
+        className="absolute top-6 left-6 md:top-8 md:left-8 flex items-center text-sm font-medium text-slate-400 hover:text-white transition-colors"
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back to Home
+      </Link>
 
+      <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">

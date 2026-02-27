@@ -86,6 +86,7 @@ export default function LandingPage() {
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-slate-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a>
+              <Link to="/about" className="text-slate-400 hover:text-white transition-colors">About</Link>
             </div>
 
             <div className="flex items-center gap-3">
@@ -120,7 +121,7 @@ export default function LandingPage() {
       </div>
 
       {/* Hero Section */}
-      <section className="pt-[110px] pb-20 px-4 sm:px-6 lg:px-8">
+      <section className="pt-24 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
@@ -370,7 +371,7 @@ export default function LandingPage() {
               <div className="flex items-center justify-center gap-6 mt-8 text-sm text-slate-400">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  <span>10,000+ Users</span>
+                  <span>999+ Active Users</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -409,9 +410,9 @@ export default function LandingPage() {
             <div>
               <h4 className="text-white font-semibold mb-4">Company</h4>
               <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+                <li><Link to="/about" className="hover:text-white transition-colors">About</Link></li>
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
             </div>
 
