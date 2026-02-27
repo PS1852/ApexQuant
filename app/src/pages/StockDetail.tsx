@@ -32,7 +32,7 @@ type TimeRange = '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '5y' | 'max';
 
 export default function StockDetail() {
   const { symbol } = useParams<{ symbol: string }>();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const { portfolio, refresh: refreshPortfolio } = usePortfolio();
   const { addToWatchlist, isInWatchlist } = useWatchlist();
 
@@ -85,6 +85,7 @@ export default function StockDetail() {
         setTradeDialogOpen(false);
         setQuantity(1);
         refreshPortfolio();
+        refreshProfile();
       } else {
         toast.error(result.message);
       }

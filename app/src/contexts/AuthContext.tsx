@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types';
 
@@ -17,11 +17,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const profileFetched = useRef(false);
 
-  const fetchOrCreateProfile = useCallback(async (currentUser: any) => {
+  const fetchOrCreateProfile = useCallback(async (currentUser: any): Promise<Profile | null> => {
     try {
-      console.log('[Auth] Fetching profile for user', currentUser.id);
+      console.log('[Auth] Fetching profile for', currentUser.id);
 
       const { data, error: fetchErr } = await supabase
         .from('profiles')
@@ -36,11 +35,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data) {
         console.log('[Auth] Profile found, balance:', data.balance);
         setProfile(data as Profile);
-        profileFetched.current = true;
-        return;
+        return data as Profile;
       }
 
-      console.log('[Auth] Profile not found, creating with ₹2000...');
+      // Profile doesn't exist — create one with ₹2000
+      console.log('[Auth] Creating profile with ₹2000...');
       const newProfile = {
         id: currentUser.id,
         email: currentUser.email || '',
@@ -60,17 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (createError) {
-        console.error('[Auth] Error creating profile:', createError);
-        setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
-      } else if (created) {
+        console.error('[Auth] Profile create error:', createError);
+        const fallback = { ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile;
+        setProfile(fallback);
+        return fallback;
+      }
+
+      if (created) {
         console.log('[Auth] Profile created, balance:', created.balance);
         setProfile(created as Profile);
-      } else {
-        setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
+        return created as Profile;
       }
-      profileFetched.current = true;
+
+      return null;
     } catch (error) {
-      console.error('[Auth] Error in fetchOrCreateProfile:', error);
+      console.error('[Auth] fetchOrCreateProfile error:', error);
+      return null;
     }
   }, []);
 
@@ -82,40 +86,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let initDone = false;
 
-    // Listen for auth changes FIRST so we don't miss events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
-
-        console.log('[Auth] onAuthStateChange:', event);
-
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-
-          // Always fetch profile on these events
-          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-            // Only fetch if we haven't already
-            if (!profileFetched.current) {
-              await fetchOrCreateProfile(currentSession.user);
-            }
-          }
-        } else if (event === 'SIGNED_OUT') {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          profileFetched.current = false;
-        }
-
-        if (mounted) setLoading(false);
-      }
-    );
-
-    // Then get the initial session
+    // Step 1: Get current session (synchronous-like, from local storage)
     const initAuth = async () => {
       try {
-        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
+        const { data: { session: s }, error } = await supabase.auth.getSession();
 
         if (error) {
           console.error('[Auth] getSession error:', error);
@@ -125,40 +101,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!mounted) return;
 
-        if (initialSession?.user) {
-          setSession(initialSession);
-          setUser(initialSession.user);
-          if (!profileFetched.current) {
-            await fetchOrCreateProfile(initialSession.user);
-          }
+        if (s?.user) {
+          setSession(s);
+          setUser(s.user);
+          await fetchOrCreateProfile(s.user);
         }
+
+        initDone = true;
       } catch (error) {
         console.error('[Auth] init error:', error);
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     };
 
     initAuth();
 
+    // Step 2: Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (!mounted) return;
+
+        console.log('[Auth] Event:', event);
+
+        if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+
+          // On INITIAL_SESSION, only fetch if initAuth hasn't done it yet
+          // On SIGNED_IN or TOKEN_REFRESHED, always re-fetch
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            await fetchOrCreateProfile(currentSession.user);
+          } else if (event === 'INITIAL_SESSION' && !initDone) {
+            await fetchOrCreateProfile(currentSession.user);
+          }
+        }
+
+        if (mounted) setLoading(false);
+      }
+    );
+
+    // Safety net: never stay loading for more than 8 seconds
+    const safetyTimer = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('[Auth] Safety timeout — forcing loading=false');
+        setLoading(false);
+      }
+    }, 8000);
+
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [fetchOrCreateProfile]);
 
-  const value = {
-    user,
-    profile,
-    session,
-    loading,
-    refreshProfile,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
