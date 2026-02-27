@@ -10,13 +10,15 @@ export default function HowItWorksPage() {
     useEffect(() => {
         const handleScroll = () => {
             const scrollPos = window.scrollY;
-            const height = window.innerHeight;
-            const index = Math.min(
-                Math.max(0, Math.floor((scrollPos - height * 0.5) / height)),
-                3
-            );
-            setActiveStep(index);
+            const threshold = window.innerHeight * 0.75;
+
+            // Calculate which step is primarily in view
+            const newActiveStep = Math.max(0, Math.min(3, Math.floor(scrollPos / threshold)));
+            setActiveStep(newActiveStep);
         };
+
+        // Trigger once on mount
+        handleScroll();
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
@@ -124,22 +126,22 @@ export default function HowItWorksPage() {
                                 <div className={`flex flex-col md:flex-row items-center gap-12 md:gap-24 transition-all duration-1000 transform ${isActive ? 'translate-y-0 opacity-100' : 'translate-y-32 opacity-0'}`}>
 
                                     {/* Left Side Content/Image */}
-                                    <div className={`w-full md:w-1/2 ${isEven ? 'md:text-right md:order-1 order-2' : 'md:order-2 order-2'}`}>
-                                        <div className="relative group p-1">
-                                            <div className={`absolute -inset-1 bg-gradient-to-r ${step.color} rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000`} />
-                                            <div className="relative bg-slate-900 rounded-3xl p-1 border border-slate-700/50 shadow-2xl w-full h-[350px] sm:h-[450px]">
+                                    <div className={`w-full md:w-1/2 ${isEven ? 'md:order-1 order-2' : 'md:order-2 order-2'}`}>
+                                        <div className="relative group p-2">
+                                            <div className={`absolute inset-0 bg-gradient-to-r ${step.color} rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition duration-700`} />
+                                            <div className="relative bg-slate-900 border border-slate-700/50 rounded-2xl p-2 shadow-2xl h-[300px] sm:h-[400px]">
                                                 <img
                                                     src={`${import.meta.env.BASE_URL}${step.image}`}
                                                     alt={step.title}
-                                                    className="w-full h-full object-cover rounded-[22px] opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                                                    className="w-full h-full object-cover rounded-xl shadow-inner group-hover:scale-[1.02] transition-transform duration-500"
                                                 />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Marker Circle */}
-                                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-slate-950 border-4 border-slate-800 z-30 items-center justify-center font-bold text-slate-500 shadow-2xl transition-all duration-500">
-                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-700 ${isActive ? 'bg-slate-900 border-white text-white shadow-[0_0_30px_rgba(255,255,255,0.3)]' : 'border-slate-800 text-slate-700'}`}>
+                                    <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex-col items-center justify-center">
+                                        <div className={`w-14 h-14 rounded-full flex items-center justify-center border-4 tracking-tighter text-xl transition-all duration-700 ${isActive ? 'bg-slate-900 border-white text-white shadow-[0_0_30px_rgba(255,255,255,0.3)] scale-110' : 'bg-slate-950 border-slate-800 text-slate-700'}`}>
                                             {step.id}
                                         </div>
                                     </div>
