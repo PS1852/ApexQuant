@@ -22,11 +22,30 @@ import type { Stock } from '@/types';
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  const { portfolio, stats: portfolioStats, loading: portfolioLoading } = usePortfolio();
+  const { portfolio, stats: portfolioStats, loading: portfolioLoading, updatePrices } = usePortfolio();
   const { watchlist, loading: watchlistLoading } = useWatchlist();
   const { transactions, loading: transactionsLoading } = useTransactions(5);
 
   const [watchlistQuotes, setWatchlistQuotes] = useState<Record<string, Stock>>({});
+
+  // Fetch live prices for portfolio holdings so Total Portfolio reflects real market value
+  useEffect(() => {
+    const loadPortfolioPrices = async () => {
+      if (portfolio.length > 0) {
+        const symbols = portfolio.map(item => item.symbol);
+        const quotes = await fetchMultipleQuotes(symbols);
+        const priceMap: Record<string, number> = {};
+        Object.entries(quotes).forEach(([symbol, quote]) => {
+          priceMap[symbol] = quote.current_price || 0;
+        });
+        updatePrices(priceMap);
+      }
+    };
+
+    loadPortfolioPrices();
+    const interval = setInterval(loadPortfolioPrices, 30000);
+    return () => clearInterval(interval);
+  }, [portfolio.length]);
 
   useEffect(() => {
     const loadWatchlistPrices = async () => {
