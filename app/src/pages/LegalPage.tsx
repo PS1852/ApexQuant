@@ -15,7 +15,7 @@ export default function LegalPage() {
             icon = <Shield className="w-8 h-8 text-emerald-400 mb-4" />;
             content = (
                 <div className="space-y-6 text-slate-300">
-                    <p>Last updated: October 2024</p>
+                    <p>Last updated: February 2025</p>
                     <section className="space-y-3">
                         <h3 className="text-xl font-semibold text-white">1. Information We Collect</h3>
                         <p>We collect information you provide directly to us when you create an account, use the platform, or communicate with us. This includes your name, email address, profile picture (if linked via Google), and virtual trading activity.</p>
@@ -40,7 +40,7 @@ export default function LegalPage() {
             icon = <FileText className="w-8 h-8 text-blue-400 mb-4" />;
             content = (
                 <div className="space-y-6 text-slate-300">
-                    <p>Last updated: October 2024</p>
+                    <p>Last updated: February 2025</p>
                     <section className="space-y-3">
                         <h3 className="text-xl font-semibold text-white">1. Acceptance of Terms</h3>
                         <p>By accessing or using ApexQuant, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.</p>
