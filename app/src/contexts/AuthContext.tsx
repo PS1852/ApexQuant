@@ -20,7 +20,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchProfile = useCallback(async (userId: string, userMeta: any): Promise<Profile | null> => {
     try {
-      // Try to get existing profile
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -33,11 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (error) {
-        console.error('[Auth] Profile fetch error:', error.message);
+        console.error('[Auth] Profile fetch err:', error.message);
         return null;
       }
 
-      // No profile found — create one
+      // No row — create new profile
       const newProfile = {
         id: userId,
         email: userMeta?.email || '',
@@ -61,25 +60,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return created as Profile;
       }
 
-      if (createErr) {
-        // Profile might already exist (race condition) — try fetching again
-        if (createErr.code === '23505') {
-          const { data: refetch } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-          if (refetch) {
-            setProfile(refetch as Profile);
-            return refetch as Profile;
-          }
+      // Insert conflict — profile was created concurrently, re-fetch
+      if (createErr?.code === '23505') {
+        const { data: refetch } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        if (refetch) {
+          setProfile(refetch as Profile);
+          return refetch as Profile;
         }
-        console.error('[Auth] Profile create error:', createErr.message);
       }
 
       return null;
     } catch (err) {
-      console.error('[Auth] fetchProfile exception:', err);
+      console.error('[Auth] fetchProfile error:', err);
       return null;
     }
   }, []);
@@ -93,62 +89,81 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const initialize = async () => {
-      try {
-        // getUser() makes a NETWORK CALL to Supabase Auth server.
-        // This validates the JWT and refreshes it if expired.
-        // Unlike getSession() which just reads from local storage cache.
-        const { data: { user: validUser }, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !validUser) {
-          // No valid user — not logged in or token fully expired
-          if (mounted) setLoading(false);
-          return;
-        }
-
-        // Now we have a validated user with a fresh JWT.
-        // Get the session (which now has the refreshed token).
-        const { data: { session: freshSession } } = await supabase.auth.getSession();
-
-        if (!mounted) return;
-
-        if (freshSession) {
-          setSession(freshSession);
-          setUser(validUser);
-          await fetchProfile(validUser.id, validUser);
-        }
-      } catch (err) {
-        console.error('[Auth] Initialize error:', err);
-      } finally {
-        if (mounted) setLoading(false);
+    // ABSOLUTE safety net — loading can NEVER stay true beyond 5 seconds
+    const safetyTimer = setTimeout(() => {
+      if (mounted) {
+        console.warn('[Auth] Safety timeout hit');
+        setLoading(false);
       }
-    };
+    }, 5000);
 
-    initialize();
-
-    // Listen for future auth events (login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      async (event, currentSession) => {
         if (!mounted) return;
 
-        if (event === 'SIGNED_IN' && newSession?.user) {
-          setSession(newSession);
-          setUser(newSession.user);
-          await fetchProfile(newSession.user.id, newSession.user);
-          setLoading(false);
-        } else if (event === 'SIGNED_OUT') {
+        console.log('[Auth] Event:', event);
+
+        // -- Handle logout or no session --
+        if (event === 'SIGNED_OUT') {
           setSession(null);
           setUser(null);
           setProfile(null);
           setLoading(false);
+          return;
         }
-        // We intentionally IGNORE 'INITIAL_SESSION' and 'TOKEN_REFRESHED'
-        // because initialize() above already handles those cases with getUser().
+
+        // -- No user in session --
+        if (!currentSession?.user) {
+          if (event === 'INITIAL_SESSION') {
+            // Not logged in at all
+            setLoading(false);
+          }
+          return;
+        }
+
+        // -- We have a session with a user --
+        const u = currentSession.user;
+
+        if (event === 'INITIAL_SESSION') {
+          // Session from cache. Token might be expired.
+          // Try fetching profile — this tests if the JWT works.
+          setSession(currentSession);
+          const p = await fetchProfile(u.id, u);
+
+          if (mounted && p) {
+            // JWT was valid! Set user, profile is already set, done.
+            setUser(u);
+            setLoading(false);
+          }
+          // If profile fetch failed (JWT expired), DON'T set user yet.
+          // DON'T set loading=false. Wait for TOKEN_REFRESHED.
+          // The safety timer at 5s is our fallback.
+          return;
+        }
+
+        if (event === 'TOKEN_REFRESHED') {
+          // Token has been refreshed — JWT is now valid!
+          setSession(currentSession);
+          setUser(u);
+          await fetchProfile(u.id, u);
+          if (mounted) setLoading(false);
+          return;
+        }
+
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          // Fresh login (OAuth callback, email login, etc.)
+          setSession(currentSession);
+          setUser(u);
+          await fetchProfile(u.id, u);
+          if (mounted) setLoading(false);
+          return;
+        }
       }
     );
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
