@@ -81,29 +81,57 @@ export default function HowItWorksPage() {
             </nav>
 
             {/* Hero Section */}
-            <section className="relative h-screen flex flex-col items-center justify-center overflow-hidden">
-                <div className="absolute inset-0">
+            <section className="relative min-h-[100dvh] flex flex-col items-center justify-center overflow-hidden bg-slate-950">
+                {/* Dynamic animated backgrounds */}
+                <div className="absolute inset-0 z-0 opacity-80">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-950/80 to-slate-950 z-10" />
                     <img
                         src={`${import.meta.env.BASE_URL}how_works_hero.png`}
-                        alt="Circuit Blueprint"
-                        className="w-full h-full object-cover opacity-40 mix-blend-screen animate-slow-pan"
+                        alt="Blueprint"
+                        className="w-full h-full object-cover mix-blend-screen opacity-20 animate-slow-pan z-0"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/50" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-transparent to-slate-950" />
+                    {/* Glowing orbs */}
+                    <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[150px] mix-blend-screen animate-pulse" style={{ animationDuration: '4s' }} />
+                    <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-600/30 rounded-full blur-[150px] mix-blend-screen animate-pulse" style={{ animationDuration: '5s', animationDelay: '1s' }} />
                 </div>
 
-                <div className="relative z-10 text-center space-y-8 max-w-4xl px-4 mt-20">
-                    <h1 className="text-6xl sm:text-8xl font-black uppercase tracking-tighter mix-blend-overlay opacity-90">
-                        The Process
+                <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center text-center mt-20">
+
+                    {/* Badge */}
+                    <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl mb-10 hover:bg-white/10 transition-all cursor-pointer shadow-xl animate-fade-in-up cursor-default" style={{ animationDelay: '0.1s' }}>
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                        </span>
+                        <span className="text-sm font-semibold text-slate-200 tracking-widest uppercase">ApexQuant Roadmap</span>
+                    </div>
+
+                    {/* Main Title */}
+                    <h1 className="text-6xl sm:text-7xl md:text-9xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-indigo-100 to-indigo-500/50 mb-8 animate-fade-in-up drop-shadow-2xl" style={{ animationDelay: '0.2s', lineHeight: '1.1' }}>
+                        The <br className="md:hidden" />
+                        <span className="relative inline-block px-4">
+                            Process
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 via-blue-400/20 to-purple-500/0 blur-2xl -z-10" />
+                        </span>
                     </h1>
-                    <p className="text-2xl text-slate-300 font-light max-w-2xl mx-auto">
-                        From the moment you create your account to mastering the institutional order flow, discover the seamless journey of an ApexQuant trader.
+
+                    {/* Description */}
+                    <p className="text-xl md:text-3xl text-slate-300 font-light max-w-4xl mx-auto leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                        From the moment you create your account to mastering the institutional order flow, discover the seamless journey of an <span className="text-white font-medium bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">ApexQuant trader.</span>
                     </p>
+
+                    {/* CTA Button */}
+                    <div className="mt-16 flex flex-col sm:flex-row items-center justify-center gap-6 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+                        <button onClick={scrollToFirst} className="group relative flex items-center gap-3 bg-white text-slate-950 px-10 py-5 rounded-full font-bold text-lg hover:bg-slate-100 transition-all hover:scale-105 shadow-[0_0_50px_rgba(255,255,255,0.15)] overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <span className="relative">Begin The Journey</span>
+                            <ChevronDown className="relative h-6 w-6 group-hover:translate-y-1 transition-transform" />
+                        </button>
+                    </div>
                 </div>
 
-                <button onClick={scrollToFirst} className="absolute bottom-12 z-20 animate-bounce p-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/20 transition-colors backdrop-blur-lg">
-                    <ChevronDown className="h-8 w-8 text-white" />
-                </button>
+                {/* Bottom Gradient Border Mask */}
+                <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-slate-950 to-transparent z-20" />
             </section>
 
             {/* Dynamic Scrolling Steps */}
