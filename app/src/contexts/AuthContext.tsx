@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types';
 
@@ -17,25 +17,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const profileFetched = useRef(false);
 
   const fetchOrCreateProfile = useCallback(async (currentUser: any) => {
     try {
       console.log('[Auth] Fetching profile for user', currentUser.id);
 
-      const { data } = await supabase
+      const { data, error: fetchErr } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', currentUser.id)
-        .maybeSingle(); // Better than single() which throws PGRST116 on 0 rows
+        .maybeSingle();
+
+      if (fetchErr) {
+        console.error('[Auth] Profile fetch error:', fetchErr);
+      }
 
       if (data) {
-        console.log('[Auth] Profile found:', data.balance);
+        console.log('[Auth] Profile found, balance:', data.balance);
         setProfile(data as Profile);
+        profileFetched.current = true;
         return;
       }
 
-      console.log('[Auth] Profile not found, creating one with ₹2000 balance...');
+      console.log('[Auth] Profile not found, creating with ₹2000...');
       const newProfile = {
         id: currentUser.id,
         email: currentUser.email || '',
@@ -58,12 +63,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('[Auth] Error creating profile:', createError);
         setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
       } else if (created) {
-        console.log('[Auth] Profile created successfully:', created.balance);
+        console.log('[Auth] Profile created, balance:', created.balance);
         setProfile(created as Profile);
       } else {
-        // Fallback
         setProfile({ ...newProfile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Profile);
       }
+      profileFetched.current = true;
     } catch (error) {
       console.error('[Auth] Error in fetchOrCreateProfile:', error);
     }
@@ -78,14 +83,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout: never stay loading for longer than 5 seconds
-    const safetyTimer = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('[Auth] Safety timeout — forcing loading=false');
-        setLoading(false);
-      }
-    }, 5000);
+    // Listen for auth changes FIRST so we don't miss events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, currentSession) => {
+        if (!mounted) return;
 
+        console.log('[Auth] onAuthStateChange:', event);
+
+        if (currentSession?.user) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+
+          // Always fetch profile on these events
+          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            // Only fetch if we haven't already
+            if (!profileFetched.current) {
+              await fetchOrCreateProfile(currentSession.user);
+            }
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          profileFetched.current = false;
+        }
+
+        if (mounted) setLoading(false);
+      }
+    );
+
+    // Then get the initial session
     const initAuth = async () => {
       try {
         const { data: { session: initialSession }, error } = await supabase.auth.getSession();
@@ -101,7 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (initialSession?.user) {
           setSession(initialSession);
           setUser(initialSession.user);
-          await fetchOrCreateProfile(initialSession.user);
+          if (!profileFetched.current) {
+            await fetchOrCreateProfile(initialSession.user);
+          }
         }
       } catch (error) {
         console.error('[Auth] init error:', error);
@@ -114,34 +143,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     initAuth();
 
-    // Listen for auth changes (login/logout/token refresh/OAuth callback)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
-
-        console.log('Auth state change:', event);
-
-        if (currentSession?.user) {
-          setSession(currentSession);
-          setUser(currentSession.user);
-
-          // Fetch profile on sign-in events and initial session (OAuth callback)
-          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
-            await fetchOrCreateProfile(currentSession.user);
-          }
-        } else {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-        }
-
-        setLoading(false);
-      }
-    );
-
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, [fetchOrCreateProfile]);
