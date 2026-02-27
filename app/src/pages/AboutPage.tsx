@@ -5,25 +5,25 @@ import { Button } from '@/components/ui/button';
 export default function AboutPage() {
     const coreValues = [
         {
-            image: "about_value_1.png",
+            image: "about_value_1_1772191657356.png",
             title: "Zero Risk, Maximum Learning",
             description: "Our philosophy revolves around providing a completely risk-free environment. Learning to trade shouldn't cost you a fortune in market mistakes.",
             color: "from-blue-600 to-blue-400"
         },
         {
-            image: "about_value_2.png",
+            image: "about_value_2_1772191674038.png",
             title: "Global Market Access",
             description: "We bring the world's major stock exchanges—NSE, BSE, and US Markets—into a single unified platform. True financial literacy is borderless.",
             color: "from-purple-600 to-purple-400"
         },
         {
-            image: "about_value_3.png",
+            image: "about_value_3_1772191690633.png",
             title: "Cutting-Edge Technology",
             description: "Built on high-performance infrastructure, our platform simulates market conditions with ultra-low latency, offering an authentic trading experience.",
             color: "from-cyan-600 to-cyan-400"
         },
         {
-            image: "about_value_4.png",
+            image: "about_value_4_1772191710072.png",
             title: "Absolute Integrity",
             description: "We rely on accurate, real-world data feeds to ensure the environment is as authentic as possible, operating with total transparency.",
             color: "from-emerald-600 to-emerald-400"
