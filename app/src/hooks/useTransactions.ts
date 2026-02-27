@@ -4,17 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Transaction } from '@/types';
 
 export function useTransactions(limit: number = 100) {
-  const { user, ready } = useAuth();
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchTransactions = useCallback(async () => {
-    if (!user?.id || !ready) {
-      if (!user?.id) {
-        setTransactions([]);
-        setLoading(false);
-      }
+    if (!user?.id) {
+      setTransactions([]);
+      setLoading(false);
       return;
     }
 
@@ -29,10 +27,7 @@ export function useTransactions(limit: number = 100) {
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
+      if (fetchError) throw fetchError;
       setTransactions(data || []);
     } catch (err: any) {
       console.error('Error fetching transactions:', err);
@@ -41,63 +36,34 @@ export function useTransactions(limit: number = 100) {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, limit, ready]);
+  }, [user?.id, limit]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
 
-  // Loading timeout
+  // Realtime subscription
   useEffect(() => {
-    if (!loading) return;
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    if (!user?.id || !ready) return;
-
+    if (!user?.id) return;
     const subscription = supabase
       .channel('transactions_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'transactions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          setTransactions(prev => [payload.new as Transaction, ...prev]);
-        }
-      )
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'transactions',
+        filter: `user_id=eq.${user.id}`,
+      }, (payload) => {
+        setTransactions(prev => [payload.new as Transaction, ...prev]);
+      })
       .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user?.id, ready]);
+    return () => { subscription.unsubscribe(); };
+  }, [user?.id]);
 
   const stats = {
-    totalBuyValue: transactions
-      .filter(t => t.type === 'BUY')
-      .reduce((sum, t) => sum + t.amount, 0),
-    totalSellValue: transactions
-      .filter(t => t.type === 'SELL')
-      .reduce((sum, t) => sum + t.amount, 0),
+    totalBuyValue: transactions.filter(t => t.type === 'BUY').reduce((sum, t) => sum + t.amount, 0),
+    totalSellValue: transactions.filter(t => t.type === 'SELL').reduce((sum, t) => sum + t.amount, 0),
     totalRealizedPnl: 0,
     buyCount: transactions.filter(t => t.type === 'BUY').length,
     sellCount: transactions.filter(t => t.type === 'SELL').length,
   };
 
-  return {
-    transactions,
-    loading,
-    error,
-    refresh: fetchTransactions,
-    stats,
-  };
+  return { transactions, loading, error, refresh: fetchTransactions, stats };
 }

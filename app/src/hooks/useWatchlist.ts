@@ -4,17 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { WatchlistItem } from '@/types';
 
 export function useWatchlist() {
-  const { user, ready } = useAuth();
+  const { user } = useAuth();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchWatchlist = useCallback(async () => {
-    if (!user?.id || !ready) {
-      if (!user?.id) {
-        setWatchlist([]);
-        setLoading(false);
-      }
+    if (!user?.id) {
+      setWatchlist([]);
+      setLoading(false);
       return;
     }
 
@@ -28,10 +26,7 @@ export function useWatchlist() {
         .eq('user_id', user.id)
         .order('added_at', { ascending: false });
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
+      if (fetchError) throw fetchError;
       setWatchlist(data || []);
     } catch (err: any) {
       console.error('Error fetching watchlist:', err);
@@ -40,38 +35,24 @@ export function useWatchlist() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, ready]);
+  }, [user?.id]);
 
   const addToWatchlist = async (symbol: string) => {
-    if (!user?.id) {
-      throw new Error('User not authenticated');
-    }
-
+    if (!user?.id) throw new Error('User not authenticated');
     const { error } = await supabase
       .from('watchlist')
       .insert([{ user_id: user.id, symbol }]);
-
     if (error) {
-      if (error.code === '23505') {
-        throw new Error('Already in watchlist');
-      }
+      if (error.code === '23505') throw new Error('Already in watchlist');
       throw error;
     }
-
     await fetchWatchlist();
   };
 
   const removeFromWatchlist = async (id: string) => {
-    if (!user?.id) {
-      throw new Error('User not authenticated');
-    }
-
+    if (!user?.id) throw new Error('User not authenticated');
     const { error } = await supabase
-      .from('watchlist')
-      .delete()
-      .eq('id', id)
-      .eq('user_id', user.id);
-
+      .from('watchlist').delete().eq('id', id).eq('user_id', user.id);
     if (error) throw error;
     setWatchlist(prev => prev.filter(item => item.id !== id));
   };
@@ -84,47 +65,22 @@ export function useWatchlist() {
     fetchWatchlist();
   }, [fetchWatchlist]);
 
-  // Loading timeout
+  // Realtime subscription
   useEffect(() => {
-    if (!loading) return;
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    if (!user?.id || !ready) return;
-
+    if (!user?.id) return;
     const subscription = supabase
       .channel('watchlist_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'watchlist',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchWatchlist();
-        }
-      )
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'watchlist',
+        filter: `user_id=eq.${user.id}`,
+      }, () => fetchWatchlist())
       .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user?.id, ready, fetchWatchlist]);
+    return () => { subscription.unsubscribe(); };
+  }, [user?.id, fetchWatchlist]);
 
   return {
-    watchlist,
-    loading,
-    error,
+    watchlist, loading, error,
     refresh: fetchWatchlist,
-    addToWatchlist,
-    removeFromWatchlist,
-    isInWatchlist,
+    addToWatchlist, removeFromWatchlist, isInWatchlist,
   };
 }

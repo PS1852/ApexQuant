@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/types';
 
@@ -7,8 +7,6 @@ interface AuthContextType {
   profile: Profile | null;
   session: any | null;
   loading: boolean;
-  /** True once we have a validated session + profile */
-  ready: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -19,8 +17,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [ready, setReady] = useState(false);
-  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProfile = useCallback(async (userId: string, userMeta: any): Promise<Profile | null> => {
     try {
@@ -40,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
 
-      // No row — create new profile
+      // No row — create profile with ₹2000
       const newProfile = {
         id: userId,
         email: userMeta?.email || '',
@@ -66,14 +62,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (createErr?.code === '23505') {
         const { data: refetch } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
-        if (refetch) {
-          setProfile(refetch as Profile);
-          return refetch as Profile;
-        }
+          .from('profiles').select('*').eq('id', userId).maybeSingle();
+        if (refetch) { setProfile(refetch as Profile); return refetch as Profile; }
       }
 
       return null;
@@ -92,69 +82,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // SAFETY: loading NEVER stays true for more than 4 seconds
-    const safetyTimer = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('[Auth] Safety timeout — forcing loading=false');
-        setLoading(false);
-      }
-    }, 4000);
+    const init = async () => {
+      try {
+        // Step 1: Check if there's any stored session at all
+        const { data: { session: cached } } = await supabase.auth.getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, currentSession) => {
-        if (!mounted) return;
-
-        console.log('[Auth] Event:', event);
-
-        // No session (signed out or not logged in)
-        if (!currentSession?.user) {
-          setSession(null);
-          setUser(null);
-          setProfile(null);
-          setReady(false);
-          setLoading(false);
+        if (!cached) {
+          // Not logged in — nothing to do
+          if (mounted) setLoading(false);
           return;
         }
 
-        // We have a session
-        const u = currentSession.user;
-        setSession(currentSession);
-        setUser(u);
+        // Step 2: FORCE refresh the JWT token.
+        // This is the KEY fix — getSession() returns from CACHE (expired token).
+        // refreshSession() makes a NETWORK CALL to get a brand new valid JWT.
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession({
+          refresh_token: cached.refresh_token,
+        });
 
-        // Try to fetch profile
-        const p = await fetchProfile(u.id, u);
+        if (refreshErr || !refreshed.session) {
+          // Refresh token expired — user must re-login
+          console.error('[Auth] Session refresh failed:', refreshErr?.message);
+          if (mounted) setLoading(false);
+          return;
+        }
 
+        // Step 3: We now have a GUARANTEED valid JWT.
+        // Set the user and fetch profile.
         if (mounted) {
-          if (p) {
-            setReady(true);
-          } else if (event === 'INITIAL_SESSION') {
-            // Profile failed on initial load — expired JWT.
-            // Schedule a retry in 2 seconds (token should be refreshed by then)
-            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-            retryTimerRef.current = setTimeout(async () => {
-              if (!mounted) return;
-              console.log('[Auth] Retrying profile fetch...');
-              const retry = await fetchProfile(u.id, u);
-              if (retry && mounted) {
-                setReady(true);
-              }
-            }, 2000);
-          }
+          const s = refreshed.session;
+          setSession(s);
+          setUser(s.user);
+          await fetchProfile(s.user.id, s.user);
           setLoading(false);
         }
+      } catch (err) {
+        console.error('[Auth] Init error:', err);
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    // Listen for future auth events (login, logout, OAuth callback)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        if (!mounted) return;
+
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          setSession(newSession);
+          setUser(newSession.user);
+          await fetchProfile(newSession.user.id, newSession.user);
+          setLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
+        // INITIAL_SESSION and TOKEN_REFRESHED are handled by init() above
       }
     );
 
     return () => {
       mounted = false;
-      clearTimeout(safetyTimer);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, profile, session, loading, ready, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, session, loading, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

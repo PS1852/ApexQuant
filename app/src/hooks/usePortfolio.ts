@@ -4,17 +4,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { PortfolioItem } from '@/types';
 
 export function usePortfolio() {
-  const { user, ready } = useAuth();
+  const { user } = useAuth();
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchPortfolio = useCallback(async () => {
-    if (!user?.id || !ready) {
-      if (!user?.id) {
-        setPortfolio([]);
-        setLoading(false);
-      }
+    if (!user?.id) {
+      setPortfolio([]);
+      setLoading(false);
       return;
     }
 
@@ -28,10 +26,7 @@ export function usePortfolio() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
+      if (fetchError) throw fetchError;
       setPortfolio(data || []);
     } catch (err: any) {
       console.error('Error fetching portfolio:', err);
@@ -40,11 +35,10 @@ export function usePortfolio() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, ready]);
+  }, [user?.id]);
 
   const updatePortfolioPrices = useCallback(async (prices: Record<string, number>) => {
     if (!portfolio.length) return;
-
     const updatedPortfolio = portfolio.map(item => {
       const currentPrice = prices[item.symbol];
       if (currentPrice) {
@@ -62,7 +56,6 @@ export function usePortfolio() {
       }
       return item;
     });
-
     setPortfolio(updatedPortfolio);
   }, [portfolio]);
 
@@ -70,39 +63,18 @@ export function usePortfolio() {
     fetchPortfolio();
   }, [fetchPortfolio]);
 
-  // Loading timeout — never show "Loading..." for more than 5 seconds
+  // Realtime subscription
   useEffect(() => {
-    if (!loading) return;
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 5000);
-    return () => clearTimeout(timer);
-  }, [loading]);
-
-  // Subscribe to realtime changes
-  useEffect(() => {
-    if (!user?.id || !ready) return;
-
+    if (!user?.id) return;
     const subscription = supabase
       .channel('portfolio_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'portfolio',
-          filter: `user_id=eq.${user.id}`,
-        },
-        () => {
-          fetchPortfolio();
-        }
-      )
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'portfolio',
+        filter: `user_id=eq.${user.id}`,
+      }, () => fetchPortfolio())
       .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [user?.id, ready, fetchPortfolio]);
+    return () => { subscription.unsubscribe(); };
+  }, [user?.id, fetchPortfolio]);
 
   const stats = {
     totalInvestment: portfolio.reduce((sum, item) => sum + (item.shares * item.average_price), 0),
@@ -111,21 +83,14 @@ export function usePortfolio() {
     totalHoldings: portfolio.length,
     totalQuantity: portfolio.reduce((sum, item) => sum + item.shares, 0),
   };
-
   stats.totalPnl = stats.currentValue - stats.totalInvestment;
   const totalPnlPercent = stats.totalInvestment > 0
-    ? (stats.totalPnl / stats.totalInvestment) * 100
-    : 0;
+    ? (stats.totalPnl / stats.totalInvestment) * 100 : 0;
 
   return {
-    portfolio,
-    loading,
-    error,
+    portfolio, loading, error,
     refresh: fetchPortfolio,
     updatePrices: updatePortfolioPrices,
-    stats: {
-      ...stats,
-      totalPnlPercent,
-    },
+    stats: { ...stats, totalPnlPercent },
   };
 }
