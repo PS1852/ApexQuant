@@ -12,7 +12,7 @@ export default function BlogPostPage() {
         category: "Trading Psychology",
         readTime: "8 min read",
         author: "Elena Rostov",
-        date: "February 12, 2025",
+        date: "February 26, 2025",
         image: `${import.meta.env.BASE_URL}blog_hero.png`
     };
 

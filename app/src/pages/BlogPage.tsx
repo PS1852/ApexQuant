@@ -11,7 +11,7 @@ export default function BlogPage() {
         category: "Trading Psychology",
         readTime: "8 min read",
         author: "Elena Rostov",
-        date: "February 12, 2025",
+        date: "February 26, 2025",
         image: `${import.meta.env.BASE_URL}about_team.png`
     };
 
@@ -22,7 +22,7 @@ export default function BlogPage() {
             excerpt: "An introduction to using simple technical parameters to build your first automated trading strategy.",
             category: "Algo Trading",
             readTime: "12 min read",
-            date: "February 8, 2025",
+            date: "February 24, 2025",
             image: "bg-blue-500/10 border-blue-500/20"
         },
         {
@@ -31,7 +31,7 @@ export default function BlogPage() {
             excerpt: "Delve into the order book, bid-ask spreads, and how High Frequency Trading firms execute their strategies.",
             category: "Market Tech",
             readTime: "10 min read",
-            date: "February 5, 2025",
+            date: "February 21, 2025",
             image: "bg-purple-500/10 border-purple-500/20"
         },
         {
@@ -40,7 +40,7 @@ export default function BlogPage() {
             excerpt: "When the VIX spikes, how should you adjust your portfolio? Learn how to hedge during uncertain macroeconomic times.",
             category: "Strategy",
             readTime: "7 min read",
-            date: "February 1, 2025",
+            date: "February 18, 2025",
             image: "bg-cyan-500/10 border-cyan-500/20"
         }
     ];
