@@ -10,6 +10,7 @@ import AuthCallback from '@/pages/AuthCallback';
 import LegalPage from '@/pages/LegalPage';
 import AboutPage from '@/pages/AboutPage';
 import ContactPage from '@/pages/ContactPage';
+import BlogPage from '@/pages/BlogPage';
 import Dashboard from '@/pages/Dashboard';
 import Portfolio from '@/pages/Portfolio';
 import Market from '@/pages/Market';
@@ -20,11 +21,13 @@ import StockDetail from '@/pages/StockDetail';
 
 // Components
 import ProtectedRoute from '@/components/ProtectedRoute';
+import ScrollToTop from '@/components/ScrollToTop';
 
 function App() {
   return (
     <AuthProvider>
       <Router basename={import.meta.env.BASE_URL}>
+        <ScrollToTop />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<LandingPage />} />
@@ -34,6 +37,7 @@ function App() {
           <Route path="/legal/:document" element={<LegalPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/blog" element={<BlogPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard" element={

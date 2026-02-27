@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail, Phone, MapPin, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -24,13 +24,13 @@ export default function ContactPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Construct mailto link
+        // Construct Gmail link
         const to = 'pranjalshrivastav5@gmail.com';
         const subject = encodeURIComponent(`${formData.subject} - ApexQuant Support (${formData.name})`);
         const body = encodeURIComponent(`Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`);
 
-        // Redirect to default email client
-        window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+        // Redirect to Gmail web client
+        window.location.href = `https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${subject}&body=${body}`;
     };
 
     return (
@@ -68,41 +68,23 @@ export default function ContactPage() {
                     </p>
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-12 max-w-5xl mx-auto">
+                <div className="flex flex-col lg:flex-row gap-12 max-w-6xl mx-auto">
                     {/* Contact Information Cards */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 shadow-xl">
-                            <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                                <Mail className="h-6 w-6 text-blue-400" />
+                    <div className="w-full lg:w-1/3 flex flex-col space-y-6">
+                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 shadow-xl flex-grow flex flex-col items-center justify-center text-center">
+                            <div className="h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-6">
+                                <Mail className="h-8 w-8 text-blue-400" />
                             </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Email Us</h3>
-                            <p className="text-slate-400 mb-2">Our friendly team is here to help.</p>
-                            <a href="mailto:pranjalshrivastav5@gmail.com" className="text-blue-400 hover:text-blue-300 transition-colors">
+                            <h3 className="text-2xl font-semibold text-white mb-3">Email Us</h3>
+                            <p className="text-slate-400 mb-4 text-lg">Our friendly team is here to help.</p>
+                            <a href="https://mail.google.com/mail/?view=cm&fs=1&to=pranjalshrivastav5@gmail.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">
                                 pranjalshrivastav5@gmail.com
                             </a>
-                        </div>
-
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 shadow-xl">
-                            <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-4">
-                                <MapPin className="h-6 w-6 text-purple-400" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">HQ Location</h3>
-                            <p className="text-slate-400 mb-2">Come say hello at our office HQ.</p>
-                            <p className="text-slate-300">Global Tech Park, Phase 2<br />Virtual Floor, Metaverse</p>
-                        </div>
-
-                        <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-800 rounded-2xl p-6 shadow-xl">
-                            <div className="h-12 w-12 rounded-full bg-cyan-500/10 flex items-center justify-center mb-4">
-                                <Phone className="h-6 w-6 text-cyan-400" />
-                            </div>
-                            <h3 className="text-xl font-semibold text-white mb-2">Phone</h3>
-                            <p className="text-slate-400 mb-2">Mon-Fri from 9am to 6pm.</p>
-                            <p className="text-slate-300">+91 (123) 456-7890</p>
                         </div>
                     </div>
 
                     {/* Contact Form */}
-                    <div className="lg:col-span-2">
+                    <div className="w-full lg:w-2/3">
                         <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-8 sm:p-10 shadow-2xl relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
                             <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
@@ -167,7 +149,7 @@ export default function ContactPage() {
                                         className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                                     >
                                         <Send className="w-5 h-5 mr-2" />
-                                        Open Email Client
+                                        Open Gmail
                                     </Button>
                                 </form>
                             </div>
