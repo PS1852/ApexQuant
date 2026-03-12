@@ -8,7 +8,7 @@ const FINNHUB_KEY = 'd6g2o99r01qqnmbqhvsgd6g2o99r01qqnmbqhvt0';
 const isDev = import.meta.env.DEV;
 const YAHOO_BASE = isDev
   ? '/yahoo-api/v8/finance/chart'
-  : 'https://corsproxy.io/?url=' + encodeURIComponent('https://query1.finance.yahoo.com/v8/finance/chart');
+  : 'https://cors.eu.org/https://query1.finance.yahoo.com/v8/finance/chart';
 const FINNHUB_BASE = 'https://finnhub.io/api/v1'; // Finnhub supports CORS natively
 
 // ============ HELPERS ============
@@ -24,9 +24,7 @@ const finnhubFetch = async (endpoint: string): Promise<any> => {
 };
 
 const yahooFetch = async (path: string): Promise<any> => {
-  const url = isDev
-    ? `${YAHOO_BASE}/${path}`
-    : `${YAHOO_BASE}/${encodeURIComponent(path)}`;
+  const url = `${YAHOO_BASE}/${path}`;
   const res = await fetch(url);
   return res.json();
 };
